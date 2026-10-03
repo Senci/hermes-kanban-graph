@@ -1,0 +1,12 @@
+name: kanban-graph
+version: "0.2.0"
+manifest_version: 2
+description: Live, read-only dependency graph of Hermes kanban boards in Hermes Desktop, with lineage selection, run history and live worker sessions.
+author: Senad Ličina
+license: MIT
+homepage: https://github.com/Senci/hermes-kanban-graph
+requires_hermes: ">=0.21.5"
+tags: [kanban, desktop, graph, visualization]
+provides_tools: []
+provides_hooks: []
+requires_env: []

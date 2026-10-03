@@ -1,0 +1,9 @@
+{
+  "name": "kanban-graph",
+  "label": "Kanban Graph",
+  "description": "Live dependency graph across kanban boards: lineage selection, runs, live worker sessions",
+  "icon": "Network",
+  "version": "0.2.0",
+  "tab": { "path": "/kanban-graph", "hidden": true },
+  "api": "plugin_api.py"
+}
