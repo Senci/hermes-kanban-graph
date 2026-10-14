@@ -55,6 +55,13 @@ graph of a few hundred tasks is small, and a full refetch can never drift from t
 the socket is not available (an OAuth remote gateway, an older Hermes) the page polls every 15 s
 and says so in the toolbar.
 
+The toolbar's indicator reads `live`, `polling` or `offline`. A failing graph fetch outranks the
+socket and shows `offline`: the SDK binds a plugin socket to a backend once, at connect, while
+REST calls follow the window's current gateway and profile, so a socket could be live on one
+backend while the page reads another. The page reopens the socket whenever the window's
+connection or profile changes, and keys its cached graph by both, so a switch never shows the
+previous backend's data.
+
 ## Layout
 
 The layout is a layered left-to-right (or top-down) flow per board, computed in the browser:

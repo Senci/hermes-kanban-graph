@@ -222,21 +222,26 @@ function graphPath(mode, board) {
   return s ? `/graph?${s}` : '/graph'
 }
 
+// Data is per backend: a gateway or profile switch must neither reuse nor show another backend's graph.
+function useBackend() {
+  return { conn: useValue(host.state.connectionId) ?? '', profile: useValue(host.state.profile) ?? '' }
+}
+
 function useGraph(mode, board) {
-  const profile = useValue(host.state.profile)
+  const { conn, profile } = useBackend()
   const live = useValue($socket) === 'live'
   return useQuery({
-    queryKey: [ID, 'graph', profile ?? '', mode, board],
+    queryKey: [ID, 'graph', conn, profile, mode, board],
     queryFn: () => (api ? api.rest(graphPath(mode, board)) : Promise.reject(new Error('kanban-graph not loaded'))),
-    placeholderData: prev => prev,
+    placeholderData: (prev, prevQuery) => (prevQuery && prevQuery.queryKey[2] === conn && prevQuery.queryKey[3] === profile ? prev : undefined),
     refetchInterval: live ? 60_000 : 15_000
   })
 }
 
 function useBoards() {
-  const profile = useValue(host.state.profile)
+  const { conn, profile } = useBackend()
   return useQuery({
-    queryKey: [ID, 'boards', profile ?? ''],
+    queryKey: [ID, 'boards', conn, profile],
     queryFn: () => api.rest('/boards'),
     staleTime: 60_000
   })
@@ -731,8 +736,11 @@ function Panel({ t, A, B, byK, hidden, generated, onPick, onClose }) {
         h(CopyButton, { text: cli, label: 'Copy command' }))))
 }
 
-function Toolbar({ boards, search, setSearch, onFit, onZoom }) {
+function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
   const mode = useValue($mode), board = useValue($board), arrange = useValue($arrange), sock = useValue($socket)
+  // A failing graph fetch outranks the socket: the socket can be live on a different backend.
+  const link = failed ? 'offline' : sock === 'live' ? 'live' : 'polling'
+  const linkTip = { live: 'Live: board events stream in', polling: 'Polling every 15 s (event socket unavailable)', offline: `Backend unreachable: ${failed}` }[link]
   return h('div', { className: 'kg-bar', onPointerDown: e => e.stopPropagation(), onClick: e => e.stopPropagation() },
     h(Codicon, { name: 'type-hierarchy', style: { color: 'var(--ui-accent)' } }),
     h('strong', { style: { fontSize: 13, marginRight: 4 } }, 'Kanban graph'),
@@ -749,10 +757,10 @@ function Toolbar({ boards, search, setSearch, onFit, onZoom }) {
     h('span', { className: 'kg-sp' }),
     // Status and zoom wrap as one group, so a narrow window never strands a lone button on row two.
     h('span', { className: 'kg-grp' },
-    h(Tip, { label: sock === 'live' ? 'Live: board events stream in' : 'Polling every 15 s (event socket unavailable)' },
+    h(Tip, { label: linkTip },
       h('span', { style: { fontSize: 11.5, color: 'var(--ui-text-tertiary)', display: 'inline-flex', alignItems: 'center' } },
-        h('span', { className: 'kg-live-dot', style: { background: sock === 'live' ? 'var(--ui-green)' : 'var(--ui-text-quaternary)' } }),
-        sock === 'live' ? 'live' : 'polling')),
+        h('span', { className: 'kg-live-dot', style: { background: link === 'live' ? 'var(--ui-green)' : link === 'offline' ? 'var(--ui-red)' : 'var(--ui-text-quaternary)' } }),
+        link)),
     h(Tip, { label: 'Zoom out (-)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(0.8), 'aria-label': 'Zoom out' }, h(Codicon, { name: 'zoom-out' }))),
     h(Tip, { label: 'Fit (0)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: onFit, 'aria-label': 'Fit' }, h(Codicon, { name: 'screen-full' }))),
     h(Tip, { label: 'Zoom in (+)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(1.25), 'aria-label': 'Zoom in' }, h(Codicon, { name: 'zoom-in' })))))
@@ -793,6 +801,7 @@ function GraphPage() {
   const mode = useValue($mode), board = useValue($board)
   const { data: g, error, isLoading, isFetching, isPlaceholderData } = useGraph(mode, board)
   const { data: boardList } = useBoards()
+  const backend = useBackend()
   const [sel, setSel] = useState(() => entry?.task || null)
   const [search, setSearch] = useState('')
   const [off, setOff] = useState(() => new Set())
@@ -1039,7 +1048,8 @@ function GraphPage() {
 
   let body
   if (error && !g) {
-    body = h('div', { style: { paddingTop: 80 } }, h(ErrorState, { title: 'Kanban graph backend unreachable', description: `${error.message || error}. The Python half loads only when kanban-graph is in plugins.enabled and the backend was restarted.` }))
+    const where = backend.conn ? `backend "${backend.conn}", profile "${backend.profile || 'default'}"` : `profile "${backend.profile || 'default'}"`
+    body = h('div', { style: { paddingTop: 80 } }, h(ErrorState, { title: 'Kanban graph backend unreachable', description: `${error.message || error} (${where}). The Python half answers only on a backend where kanban-graph is installed, in plugins.enabled and restarted since; a remote gateway needs its own install. To see this machine's boards, switch the window to This device.` }))
   } else if (isLoading || !g) {
     body = h('div', { style: { paddingTop: 120, display: 'grid', placeItems: 'center' } }, h(Loader, null))
   } else if (!g.tasks.length) {
@@ -1072,7 +1082,7 @@ function GraphPage() {
   const t = sel && d ? d.byK.get(sel) : null
   return h('div', { ref: pageRef, className: 'kg-page', tabIndex: 0, onKeyDown },
     h('div', { ref: stageRef, className: 'kg-stage', onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onClickCapture: onStageClick }, body),
-    h('div', { ref: barRef }, h(Toolbar, { boards: boardList?.boards, search, setSearch, onFit: () => fit(true), onZoom: zoomCenter })),
+    h('div', { ref: barRef }, h(Toolbar, { boards: boardList?.boards, search, setSearch, onFit: () => fit(true), onZoom: zoomCenter, failed: error ? String(error.message || error) : '' })),
     g ? h(Footer, { g, off, toggle, footRef, hint: `${shown}/${g.tasks.length} tasks, ${lay ? lay.links.length : 0}/${g.links.length} links, ${plural(lay ? lay.bands.length : 0, 'board')}${lay && lay.implied ? `, ${lay.implied} implied hidden` : ''}${g.hidden.length ? ` (hidden: ${g.hidden.join(', ')})` : ''}${lay && lay.quiet && !sel ? ', arrows on select' : ''}${isFetching ? ', refreshing' : ''}. Data ${hm(g.generated)}` }) : null,
     t && lineage ? h(Panel, { t, A: lineage.A, B: lineage.B, byK: d.byK, hidden: g.hidden, generated: g.generated, onPick: pick, onClose: () => setSel(null) }) : null)
 }
@@ -1104,7 +1114,7 @@ export default {
     // Coalesce event bursts (a dispatcher tick writes several rows) into one refetch.
     let pending = null
     let lastFrame = 0
-    ctx.socket('/events', frame => {
+    const onFrame = frame => {
       lastFrame = Math.floor(Date.now() / 1000)
       $socket.set('live')
       if (!frame || !frame.events || !frame.events.length) return
@@ -1113,9 +1123,22 @@ export default {
         pending = null
         void queryClient.invalidateQueries({ queryKey: [ID, 'graph'] })
       }, 400)
-    })
+    }
+    // The SDK resolves a socket's backend once at connect, while REST follows the window's current
+    // gateway and profile. Reopen on every switch so "live" always describes the backend on screen.
+    let closeSocket = null
+    const openSocket = () => {
+      closeSocket?.()
+      lastFrame = 0
+      $socket.set('off')
+      closeSocket = ctx.socket('/events', onFrame)
+    }
+    openSocket()
+    const unlisten = [host.state.connectionId.listen(openSocket), host.state.profile.listen(openSocket)]
 
     ctx.onDispose(() => {
+      unlisten.forEach(stop => stop())
+      closeSocket?.()
       style.remove()
       api = null
       $socket.set('off')

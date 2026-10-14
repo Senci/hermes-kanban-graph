@@ -11,6 +11,15 @@ All notable changes to this project are documented here. The format follows
 - CI: a GitHub Actions workflow runs the test suites and `hermes plugins validate` and `doctor`
   against the oldest supported Hermes (0.21.5) on every push and pull request.
 
+### Fixed
+
+- The toolbar no longer reads "live" while the graph cannot be fetched. It shows `offline`
+  (red) with the error in its tooltip; the socket could stay live on a different backend.
+- Switching a window to another gateway or profile reopens the event socket on the new backend
+  and no longer shows the previous backend's graph while the new one loads or fails.
+- "Backend unreachable" names the backend and profile it tried and says how to fix a remote
+  gateway, instead of only pointing at `plugins.enabled`.
+
 ## [0.2.0] - 2026-10-03
 
 First public release as a standalone repository.

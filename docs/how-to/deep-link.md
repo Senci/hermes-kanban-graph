@@ -38,3 +38,4 @@ under `~/.hermes/kanban/boards/`; `hermes kanban boards list` lists them.
 | Page opens, no task selected | The task does not exist on that board; check the slug and id |
 | Page opens with mode "All" | The task was hidden by your filter, so the view widened |
 | App does not come to the front | `hermes://` is not registered; start Hermes Desktop once |
+| Page says "backend unreachable", toolbar reads `offline` | The window is on a backend without the plugin, usually a remote gateway; the message names it. Switch the window to This device, or install the plugin on that host |
