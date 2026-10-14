@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- CI: a GitHub Actions workflow runs the test suites and `hermes plugins validate` and `doctor`
+  against the oldest supported Hermes (0.21.5) on every push and pull request.
+
 ## [0.2.0] - 2026-10-03
 
 First public release as a standalone repository.
