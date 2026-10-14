@@ -1,7 +1,7 @@
 ---
 name: board-graph
 description: "Use when asked to show, draw or navigate the kanban dependency graph: lineage, what is running or blocked across boards."
-version: 0.2.0
+version: 0.2.1
 author: Senad Ličina
 license: MIT
 metadata:

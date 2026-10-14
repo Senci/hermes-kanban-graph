@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-14
+
 ### Added
 
 - CI: a GitHub Actions workflow runs the test suites and `hermes plugins validate` and `doctor`
@@ -53,5 +55,6 @@ First public release as a standalone repository.
 
 Private version: desktop page, backend routes, event socket, static snapshot.
 
-[Unreleased]: https://github.com/Senci/hermes-kanban-graph/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Senci/hermes-kanban-graph/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Senci/hermes-kanban-graph/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Senci/hermes-kanban-graph/releases/tag/v0.2.0
