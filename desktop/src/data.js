@@ -1,6 +1,6 @@
 import { useQuery, useValue } from '@hermes/plugin-sdk'
 
-import { useBackend, useLiveQuery } from '../../../../packages/ui-kit/src/live.js'
+import { useBackend, useLiveQuery } from '#ui-kit/live.js'
 
 import { ALL, ID, MODE_PARAMS } from './model.js'
 import { $socket, api } from './state.js'

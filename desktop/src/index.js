@@ -11,8 +11,8 @@
 import { host, ROUTES_AREA, SIDEBAR_NAV_AREA, PALETTE_AREA } from '@hermes/plugin-sdk'
 import { createElement as h } from 'react'
 
-import { startLiveChannel } from '../../../../packages/ui-kit/src/live.js'
-import { mountStyle } from '../../../../packages/ui-kit/src/theme.js'
+import { startLiveChannel } from '#ui-kit/live.js'
+import { mountStyle } from '#ui-kit/theme.js'
 
 // Order matters: the bundle emits modules in this order and the layout markers must wrap the
 // layout and its kit imports (see layout-start.js).

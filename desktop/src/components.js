@@ -14,8 +14,8 @@ import {
 } from '@hermes/plugin-sdk'
 import { createElement as h, Fragment } from 'react'
 
-import { Bar, FootBar } from '../../../../packages/ui-kit/src/shell.js'
-import { TONE } from '../../../../packages/ui-kit/src/theme.js'
+import { Bar, FootBar } from '#ui-kit/shell.js'
+import { TONE } from '#ui-kit/theme.js'
 
 import { curRun, dur, fmt, hm } from './format.js'
 import { KG_MODES } from './layout.js'

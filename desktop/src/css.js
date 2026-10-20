@@ -1,6 +1,6 @@
 // kanban-graph's stylesheet: the kit's graph rules plus the rules only this page has (status
 // icon sizing in the card text, the detail panel code blocks, run table, activity list).
-import { graphCss } from '../../../../packages/ui-kit/src/css.js'
+import { graphCss } from '#ui-kit/css.js'
 
 import { ANIM_MS } from './model.js'
 

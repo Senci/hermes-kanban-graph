@@ -4,7 +4,7 @@
 // It sits between the layout markers (see layout-start.js), so it may only use NW and NH and names
 // it defines itself.
 
-import { ARRANGE_MODES, dagHeadFont, dagPlace, dagReduce } from '../../../../packages/ui-kit/src/layered.js'
+import { ARRANGE_MODES, dagHeadFont, dagPlace, dagReduce } from '#ui-kit/layered.js'
 import { NW, NH } from './sizes.js'
 
 const SZ = { NW, NH }
