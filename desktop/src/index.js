@@ -2,20 +2,21 @@
 // package's own backend (dashboard/plugin_api.py via ctx.rest); the ctx.socket event stream
 // invalidates it, with a poll as the floor (the socket is a no-op on OAuth remotes).
 //
-// Source of desktop/plugin.js. Build: `npm ci && npm run build` at the repo root (esbuild, one
-// file, SDK and react external). Every named import from '@hermes/plugin-sdk' must exist in the
-// host's SDK at the oldest Hermes in plugin.yaml's requires_hermes (tools/build/sdk-exports.mjs
-// checks the list); the loader import()s the bundle as a real ES module, so a missing export is a
-// link-time SyntaxError that takes the page route, sidebar row and palette row down together.
+// Source of desktop/plugin.js. Build: `sh scripts/rebuild.sh` (esbuild 0.28.2, one file, SDK and react
+// external; CONTRIBUTING.md has the details). The modules in kit/ are a one-time fork, edit them here.
+// Every named import from '@hermes/plugin-sdk' must exist in the host's SDK at the oldest Hermes in
+// plugin.yaml's requires_hermes; the loader import()s the bundle as a real ES module, so a missing
+// export is a link-time SyntaxError that takes the page route, sidebar row and palette row down
+// together.
 
 import { host, ROUTES_AREA, SIDEBAR_NAV_AREA, PALETTE_AREA } from '@hermes/plugin-sdk'
 import { createElement as h } from 'react'
 
-import { startLiveChannel } from '#ui-kit/live.js'
-import { mountStyle } from '#ui-kit/theme.js'
+import { startLiveChannel } from './kit/live.js'
+import { mountStyle } from './kit/theme.js'
 
 // Order matters: the bundle emits modules in this order and the layout markers must wrap the
-// layout and its kit imports (see layout-start.js).
+// layout and kit/layered.js (see layout-start.js).
 import './sizes.js'
 import './layout-start.js'
 import { KG_MODES } from './layout.js'

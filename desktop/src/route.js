@@ -5,7 +5,7 @@
 // Every param is always written, so a copied link fully determines the view; a param that is
 // absent falls back to the remembered preference, so a bare `#/kanban-graph` still works.
 
-import { createRoute } from '#ui-kit/route.js'
+import { createRoute } from './kit/route.js'
 
 import { KG_MODES } from './layout.js'
 import { ALL, MODE_PARAMS, MODES, PATH } from './model.js'

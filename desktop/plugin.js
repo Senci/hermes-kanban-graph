@@ -1,8 +1,8 @@
-// plugins/kanban-graph/desktop/src/index.js
+// desktop/src/index.js
 import { host as host2, ROUTES_AREA, SIDEBAR_NAV_AREA, PALETTE_AREA } from "@hermes/plugin-sdk";
 import { createElement as h4 } from "react";
 
-// packages/ui-kit/src/live.js
+// desktop/src/kit/live.js
 import { atom, host, queryClient, useQuery, useValue } from "@hermes/plugin-sdk";
 var POLL_FLOOR_MS = 15e3;
 var LIVE_SAFETY_MS = 6e4;
@@ -47,7 +47,7 @@ function startLiveChannel(ctx, { status = atom("off"), path = "/events", invalid
   };
 }
 
-// packages/ui-kit/src/theme.js
+// desktop/src/kit/theme.js
 var ui = (name) => `var(--ui-${name})`;
 var TONE = {
   text: ui("text-primary"),
@@ -70,14 +70,14 @@ function mountStyle(id, css) {
   return () => style.remove();
 }
 
-// plugins/kanban-graph/desktop/src/sizes.js
+// desktop/src/sizes.js
 var NW = 240;
 var NH = 58;
 
-// plugins/kanban-graph/desktop/src/layout-start.js
+// desktop/src/layout-start.js
 // kg:layout-start @preserve
 
-// packages/ui-kit/src/layered.js
+// desktop/src/kit/layered.js
 var GAP_X = 80;
 var GAP_Y = 18;
 var GAP_DOWN = 64;
@@ -349,7 +349,7 @@ function dagPlace(g, shown, links, aspect, mode, sz, sameBoardOnly) {
   return { pos, bands, routes, box, down };
 }
 
-// plugins/kanban-graph/desktop/src/layout.js
+// desktop/src/layout.js
 var SZ = { NW, NH };
 var KG_MODES = ARRANGE_MODES;
 var kgHeadFont = dagHeadFont;
@@ -360,10 +360,10 @@ function kgLayout(g, shown, aspect = 1.6, mode = "flow") {
   return { pos, bands, links, implied: visible.length - links.length, routes, box, quiet: mode === "grid" };
 }
 
-// plugins/kanban-graph/desktop/src/layout-end.js
+// desktop/src/layout-end.js
 // kg:layout-end @preserve
 
-// packages/ui-kit/src/css.js
+// desktop/src/kit/css.js
 function graphCss(p, animMs, x = {}) {
   return `
 @property --${p}-arc-angle{syntax:'<angle>';inherits:false;initial-value:0deg}
@@ -423,7 +423,7 @@ ${x.end || ""}
 `;
 }
 
-// plugins/kanban-graph/desktop/src/model.js
+// desktop/src/model.js
 var ID = "kanban-graph";
 var PATH = "/kanban-graph";
 var ALL = "__all__";
@@ -449,7 +449,7 @@ var MODES = [
 ];
 var MODE_PARAMS = { running: { focus: "running" }, open: { hide: "done" }, all: {} };
 
-// plugins/kanban-graph/desktop/src/css.js
+// desktop/src/css.js
 var bar = `
 .kg-bar .kg-seg{grid-auto-columns:auto}
 `;
@@ -472,14 +472,14 @@ var end = `
 `;
 var CSS = graphCss("kg", ANIM_MS, { bar, nodeText, panel, end });
 
-// plugins/kanban-graph/desktop/src/page.js
+// desktop/src/page.js
 import { EmptyState, ErrorState, Loader, useValue as useValue4 } from "@hermes/plugin-sdk";
 import { createElement as h3, Fragment as Fragment2, useCallback as useCallback2, useEffect as useEffect2, useLayoutEffect, useMemo, useRef as useRef2, useState as useState2 } from "react";
 
-// packages/ui-kit/src/shell.js
+// desktop/src/kit/shell.js
 import { createElement as h } from "react";
 
-// packages/ui-kit/src/util.js
+// desktop/src/kit/util.js
 import { useEffect, useState } from "react";
 var stopEvent = (e) => e.stopPropagation();
 function walk(k, map, acc) {
@@ -500,7 +500,7 @@ function useDebounced(value, ms) {
   return v;
 }
 
-// packages/ui-kit/src/shell.js
+// desktop/src/kit/shell.js
 function Shell({ prefix, pageRef, onKeyDown, children }) {
   return h("div", { ref: pageRef, className: `${prefix}-page`, tabIndex: 0, onKeyDown }, ...[].concat(children));
 }
@@ -514,7 +514,7 @@ function FootBar({ prefix, footRef, children }) {
   return h("div", { ref: footRef, className: `${prefix}-foot`, onPointerDown: stopEvent, onClick: stopEvent }, ...[].concat(children));
 }
 
-// packages/ui-kit/src/viewport.js
+// desktop/src/kit/viewport.js
 import { useCallback, useRef } from "react";
 function useViewport(stageRef, worldRef, onScale, { prefix, animMs = 350, minScale = 0.05 }) {
   const v = useRef({ x: 0, y: 0, s: 1 });
@@ -568,7 +568,7 @@ function useViewport(stageRef, worldRef, onScale, { prefix, animMs = 350, minSca
   return { v, apply, animate, zoomAt, fitBox, shift, centerOn };
 }
 
-// plugins/kanban-graph/desktop/src/components.js
+// desktop/src/components.js
 import {
   Button,
   Codicon,
@@ -585,7 +585,7 @@ import {
 } from "@hermes/plugin-sdk";
 import { createElement as h2, Fragment } from "react";
 
-// plugins/kanban-graph/desktop/src/format.js
+// desktop/src/format.js
 var fmt = (t) => t ? new Date(t * 1e3).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "";
 var hm = (t) => new Date(t * 1e3).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 function dur(s) {
@@ -595,7 +595,7 @@ function dur(s) {
 }
 var curRun = (t) => (t.runs || []).find((u) => u.s === "running");
 
-// plugins/kanban-graph/desktop/src/state.js
+// desktop/src/state.js
 import { atom as atom2 } from "@hermes/plugin-sdk";
 var api = null;
 var setApi = (ctx) => {
@@ -607,7 +607,7 @@ var $board = atom2(ALL);
 var $arrange = atom2("flow");
 var $socket = atom2("off");
 
-// plugins/kanban-graph/desktop/src/components.js
+// desktop/src/components.js
 var STALE_HEARTBEAT_S = 120;
 function Arc({ hb }) {
   const now = useValue2($now);
@@ -843,7 +843,7 @@ function Footer({ g, off, toggle, hint, footRef }) {
   );
 }
 
-// plugins/kanban-graph/desktop/src/data.js
+// desktop/src/data.js
 import { useQuery as useQuery2, useValue as useValue3 } from "@hermes/plugin-sdk";
 function graphPath(mode, board) {
   const q = new URLSearchParams(MODE_PARAMS[mode] || {});
@@ -880,7 +880,7 @@ function derive(g) {
   return { byK, up, down };
 }
 
-// packages/ui-kit/src/route.js
+// desktop/src/kit/route.js
 function createRoute(path, { select, params }) {
   const split = () => window.location.hash.replace(/^#/, "").split("?");
   const on = () => (window.location.hash || "").replace(/^#/, "").split("?")[0] === path;
@@ -907,7 +907,7 @@ function createRoute(path, { select, params }) {
   return { path, on, read, href, write };
 }
 
-// plugins/kanban-graph/desktop/src/route.js
+// desktop/src/route.js
 var route = createRoute(PATH, { select: "task", params: ["mode", "board", "arrange"] });
 function payloadIsFor(g, mode, board) {
   const want = MODE_PARAMS[mode] || {};
@@ -934,7 +934,7 @@ function applyRoute(r) {
   }
 }
 
-// plugins/kanban-graph/desktop/src/page.js
+// desktop/src/page.js
 function GraphPage() {
   const [entry] = useState2(() => {
     const r = route.read();
@@ -1229,7 +1229,7 @@ function GraphPage() {
   );
 }
 
-// plugins/kanban-graph/desktop/src/index.js
+// desktop/src/index.js
 var index_default = {
   id: ID,
   name: "Kanban Graph",

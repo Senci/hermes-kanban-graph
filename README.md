@@ -59,6 +59,7 @@ git clone https://github.com/Senci/hermes-kanban-graph
 cd hermes-kanban-graph
 python3 -m unittest discover -s tests -v   # backend model and snapshot
 node tests/layout.test.mjs                 # layout and transitive reduction
+sh scripts/rebuild.sh                      # rebuild desktop/plugin.js from desktop/src (esbuild 0.28.2)
 hermes plugins validate .                  # the plugin catalog's admission check
 ```
 

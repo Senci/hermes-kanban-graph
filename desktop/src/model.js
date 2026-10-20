@@ -1,4 +1,4 @@
-import { ui } from '#ui-kit/theme.js'
+import { ui } from './kit/theme.js'
 
 export const ID = 'kanban-graph'
 export const PATH = '/kanban-graph'

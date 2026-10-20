@@ -13,7 +13,11 @@ hermes-kanban-graph/
     plugin_api.py          FastAPI router: /boards, /graph, /events
     graph_model.py         board discovery and graph build, read-only SQLite
   desktop/
-    plugin.js              desktop page, sidebar row, palette entry (plain ESM, no build step)
+    plugin.js              desktop page, sidebar row, palette entry (built from desktop/src by scripts/rebuild.sh)
+    src/                   source of plugin.js; src/kit/ holds the shared modules, forked once
+  scripts/
+    rebuild.sh             installs the pinned esbuild outside the tree and builds
+    build.mjs              the esbuild call; esbuild-lock.json pins the install
   snapshot/
     kanban_graph.py        static HTML renderer
     template.html          snapshot page; layout block shared with desktop/plugin.js

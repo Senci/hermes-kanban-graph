@@ -1,10 +1,10 @@
 import { EmptyState, ErrorState, Loader, useValue } from '@hermes/plugin-sdk'
 import { createElement as h, Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import { Shell, Stage } from '#ui-kit/shell.js'
-import { useDebounced, walk } from '#ui-kit/util.js'
-import { useBackend } from '#ui-kit/live.js'
-import { useViewport } from '#ui-kit/viewport.js'
+import { Shell, Stage } from './kit/shell.js'
+import { useDebounced, walk } from './kit/util.js'
+import { useBackend } from './kit/live.js'
+import { useViewport } from './kit/viewport.js'
 
 import { Footer, Node, Panel, plural, SEP, Toolbar } from './components.js'
 import { derive, useBoards, useGraph } from './data.js'

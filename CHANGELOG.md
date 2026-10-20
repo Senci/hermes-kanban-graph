@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The desktop half is now built from `desktop/src` (esbuild 0.28.2, `sh scripts/rebuild.sh`); the
+  rebuild is byte for byte reproducible and CI fails on a difference. Behaviour is unchanged.
+
 ## [0.2.1] - 2026-10-14
 
 ### Added
