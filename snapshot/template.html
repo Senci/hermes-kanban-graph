@@ -148,10 +148,11 @@ D.tasks.forEach(t=>{
 // Layout: rerun over the visible tasks whenever the visible set changes, so hidden tasks leave no
 // holes and their links stop shaping the graph. kanban_graph.py pastes the live plugin's layout
 // code here, so both views arrange tasks the same way.
-// Arrange mode, remembered per browser; changing it re-lays out and refits.
-let MODE=localStorage.getItem('kg-mode')||'flow'; if(!KG_MODES.some(([m])=>m===MODE)) MODE='flow';
+// Arrange mode, remembered per browser; changing it re-lays out and refits. A sandboxed frame (Lavish) has no storage.
+const store=(()=>{try{return localStorage}catch{return null}})();
+let MODE=store?.getItem('kg-mode')||'flow'; if(!KG_MODES.some(([m])=>m===MODE)) MODE='flow';
 KG_MODES.forEach(([m,l])=>$('#mode').insertAdjacentHTML('beforeend',`<option value="${m}"${m===MODE?' selected':''}>${l}</option>`));
-$('#mode').addEventListener('change',e=>{MODE=e.target.value; localStorage.setItem('kg-mode',MODE); laySig=''; userMoved=false; paint(); if(!sel) fit()});
+$('#mode').addEventListener('change',e=>{MODE=e.target.value; store?.setItem('kg-mode',MODE); laySig=''; userMoved=false; paint(); if(!sel) fit()});
 const layoutAll=shown=>{const r=stage.getBoundingClientRect(); return kgLayout(D,shown,r.height>0?r.width/r.height:1.6,MODE)};
 let LAY=null, laySig='';
 // Apply a layout; visible elements keep their last place while hidden, so a re-show slides from there.
