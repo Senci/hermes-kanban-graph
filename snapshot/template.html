@@ -47,6 +47,7 @@ svg.i{width:16px;height:16px;flex:none;vertical-align:-3px}
 .node text.s{fill:var(--mute);font-size:11px}
 .node.sel rect.box{stroke:var(--acc);stroke-width:3}
 .node.rel rect.box{stroke:var(--acc);stroke-width:1.8}
+.node.hl rect.box{stroke:var(--acc);stroke-width:2.5;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--acc) 60%,transparent))}
 .dim{opacity:.16}
 .hide{display:none}
 .node,.edge,.band{transition:opacity .25s}
@@ -141,6 +142,7 @@ D.tasks.forEach(t=>{
     (curRun(t)?`<text class="s live-t" x="12" y="44" style="fill:var(--running)" data-a="${curRun(t).a}"></text>`
       :`<text class="s" x="12" y="44">${esc(t.id)}${t.a?' · '+esc(t.a):''}${t.m?' · '+esc(cut(t.m.replace('claude-',''),14)):''}</text>`)+warn+arcSvg(t);
   if(curRun(t)) g.classList.add('live');
+  if(D.hl&&D.hl.includes(t.id)) g.classList.add('hl');
   g.addEventListener('click',ev=>{ev.stopPropagation(); select(t.k)});
   nodes.appendChild(g); N.set(t.k,g);
 });

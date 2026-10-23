@@ -100,6 +100,8 @@ def main() -> int:
                     help="drop tasks in this status (repeatable, or comma-separated), e.g. done")
     ap.add_argument("--focus-status", action="append", default=[], metavar="STATUS",
                     help="keep only tasks in this status plus their transitive parents and children, e.g. running")
+    ap.add_argument("--highlight", action="append", default=[], metavar="ID",
+                    help="outline these task ids (repeatable, or comma-separated), e.g. the cards a review page is about")
     ap.add_argument("--out", help="output HTML path (default: <root>/cache/kanban-graph/<name>.html)")
     ap.add_argument("--list", action="store_true", help="list board slugs and exit")
     args = ap.parse_args()
@@ -128,7 +130,7 @@ def main() -> int:
         name += "-" + "-".join(sorted(focus))
         title += f" ({', '.join(sorted(focus))} + lineage)"
     data = gm.build(boards, root=root, include_archived=args.archived, hide=hide, focus=focus)
-    data.update(title=title, node=[NODE_W, NODE_H])
+    data.update(title=title, node=[NODE_W, NODE_H], hl=sorted(_split(args.highlight)))
 
     icons = json.loads(ICONS.read_text(encoding="utf-8"))["icons"]
     payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")

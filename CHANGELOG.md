@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Snapshot `--highlight ID`: outline the given tasks, e.g. the cards a review page is about.
+
+### Fixed
+
+- The snapshot renders inside a sandboxed frame without storage; the arrange mode falls back to flow.
+
 ### Changed
 
 - The desktop half is now built from `desktop/src` (esbuild 0.28.2, `sh scripts/rebuild.sh`); the

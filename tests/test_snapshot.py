@@ -32,6 +32,18 @@ class SnapshotTest(unittest.TestCase):
             self.assertNotIn("__DATA__", page)
             self.assertNotIn("/*__LAYOUT__*/", page)
 
+    def test_highlight_ids_reach_the_page(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            make_board(home / "kanban" / "boards", "demo")
+            out = home / "out.html"
+            env = {**os.environ, "HERMES_HOME": str(home)}
+            env.pop("HERMES_KANBAN_HOME", None)
+            res = subprocess.run([sys.executable, str(CLI), "--board", "demo", "--highlight", "t_a,t_b", "--out", str(out)],
+                                 env=env, capture_output=True, text=True, check=False)
+            self.assertEqual(res.returncode, 0, res.stderr)
+            self.assertIn('"hl":["t_a","t_b"]', out.read_text(encoding="utf-8"))
+
     def test_profile_home_resolves_to_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

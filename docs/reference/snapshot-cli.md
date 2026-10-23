@@ -11,6 +11,7 @@ Renders boards to one self-contained HTML file. Python 3.11+, standard library o
 | `--board SLUG` | all boards | Board to include; repeat for several |
 | `--hide-status STATUS` | none | Drop tasks in this status; repeat for several |
 | `--focus-status STATUS` | none | Keep tasks in this status plus their lineage; repeat for several |
+| `--highlight ID` | none | Outline these task ids; repeat or comma-separate |
 | `--archived` | off | Include archived tasks |
 | `--archived-boards` | off | Include boards marked archived |
 | `--out PATH` | `$HERMES_HOME/cache/kanban-graph/<name>.html` | Output file; `<name>` is the board slug or `all-boards`, plus `-<status>` for each focus status |
