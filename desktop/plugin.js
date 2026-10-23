@@ -619,6 +619,13 @@ function LiveDuration({ since, suffix = "" }) {
 }
 var SEP = " · ";
 var plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+var onActivate = (fn) => (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    e.stopPropagation();
+    fn();
+  }
+};
 var Node = ({ t, at, cls, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk;
   const sub = [t.id, t.a, t.m && t.m.replace("claude-", "")].filter(Boolean).join(SEP);
@@ -628,12 +635,16 @@ var Node = ({ t, at, cls, onPick }) => {
       className: `kg-node${run ? " live" : ""}${cls}`,
       style: { transform: `translate(${at[0]}px,${at[1]}px)`, width: NW, height: NH },
       title: t.t,
+      role: "button",
+      tabIndex: 0,
+      "aria-label": `${t.t}, ${t.s}`,
       "data-k": t.k,
       "data-id": t.id,
       onClick: (e) => {
         e.stopPropagation();
         onPick(t.k);
-      }
+      },
+      onKeyDown: onActivate(() => onPick(t.k))
     },
     h2("div", { className: "kg-stripe", style: { background: m.tone } }),
     run ? h2(Arc, { hb: run.hb || t.hb }) : null,
@@ -659,7 +670,7 @@ function Row({ t, onPick }) {
   const m = meta(t.s);
   return h2(
     "div",
-    { className: "kg-rl", onClick: () => onPick(t.k, true) },
+    { className: "kg-rl", role: "button", tabIndex: 0, "aria-label": `${t.t}, ${t.s}`, onClick: () => onPick(t.k, true), onKeyDown: onActivate(() => onPick(t.k, true)) },
     h2(Codicon, { name: m.icon, style: { color: m.tone } }),
     h2("span", null, t.t),
     h2("small", null, t.id)

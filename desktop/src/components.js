@@ -39,6 +39,10 @@ export function LiveDuration({ since, suffix = '' }) {
 // Card and band sublines: HTML collapses repeated spaces, so fields need a visible separator.
 export const SEP = ' · '
 export const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`
+// Enter and Space act like a click; stopPropagation keeps the page-level key handler out of it.
+const onActivate = fn => e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); fn() }
+}
 
 export const Node = ({ t, at, cls, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk
@@ -47,9 +51,13 @@ export const Node = ({ t, at, cls, onPick }) => {
     className: `kg-node${run ? ' live' : ''}${cls}`,
     style: { transform: `translate(${at[0]}px,${at[1]}px)`, width: NW, height: NH },
     title: t.t,
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': `${t.t}, ${t.s}`,
     'data-k': t.k,
     'data-id': t.id,
-    onClick: e => { e.stopPropagation(); onPick(t.k) }
+    onClick: e => { e.stopPropagation(); onPick(t.k) },
+    onKeyDown: onActivate(() => onPick(t.k))
   },
     h('div', { className: 'kg-stripe', style: { background: m.tone } }),
     run ? h(Arc, { hb: run.hb || t.hb }) : null,
@@ -64,7 +72,7 @@ export const Node = ({ t, at, cls, onPick }) => {
 
 export function Row({ t, onPick }) {
   const m = meta(t.s)
-  return h('div', { className: 'kg-rl', onClick: () => onPick(t.k, true) },
+  return h('div', { className: 'kg-rl', role: 'button', tabIndex: 0, 'aria-label': `${t.t}, ${t.s}`, onClick: () => onPick(t.k, true), onKeyDown: onActivate(() => onPick(t.k, true)) },
     h(Codicon, { name: m.icon, style: { color: m.tone } }),
     h('span', null, t.t),
     h('small', null, t.id))
