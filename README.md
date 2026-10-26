@@ -1,71 +1,100 @@
 # Kanban Graph for Hermes
 
 A live, read-only dependency graph of your [Hermes](https://github.com/NousResearch/hermes-agent)
-kanban boards, inside Hermes Desktop. Every board is a band, every task a card, every dependency
-an arrow. Click a task to light up everything it waits on and everything waiting on it, with its
-runs, last failure and the running worker's latest tool calls in a side panel.
+kanban boards, inside Hermes Desktop.
+
+## What it does
+
+- Shows every board as a band, every task as a card, every dependency as an arrow.
+- Click a task to light up what it waits on and what waits on it. A side panel shows its runs, last
+  failure and the running worker's latest tool calls.
+- Stays live and read-only: it never writes to a board.
+
+```mermaid
+flowchart LR
+  A["Sidebar: Kanban graph"] --> B["One band per board"]
+  B --> C["Mode: Running + lineage, Open, All"]
+  C --> D["Click a task"]
+  D --> E["Lineage lit, rest fades"]
+  D --> F["Side panel: runs, last failure, tool calls"]
+```
+
+## Install and enable
+
+You need Hermes Agent 0.21.5 or newer and Hermes Desktop. No API keys, no other dependencies.
+
+1. Install the plugin and enable its backend half:
+
+   ```sh
+   hermes plugins install Senci/hermes-kanban-graph --enable
+   ```
+
+2. Check that it is listed:
+
+   ```sh
+   hermes plugins list
+   ```
+
+3. Restart the Hermes backend, or the app, if it was already running. This mounts the routes the
+   page reads from.
+4. In Hermes Desktop, open **Capabilities > Plugins** and switch on **Kanban Graph**. The desktop
+   half of a plugin starts switched off, and until you switch it on the page does not exist.
+5. If the sidebar row does not appear within a few seconds, open the command palette (`Ctrl+K`, or
+   `Cmd+K` on macOS) and run **Reload desktop plugins**.
+
+<!-- TODO-SHOT KG-S1: Capabilities > Plugins with Kanban Graph switched on -->
+
+## First use
+
+1. Click **Kanban graph** in the sidebar. Or open the command palette and run **Open kanban
+   graph**.
+
+   <!-- TODO-SHOT KG-S2: the page in Running + lineage mode with the sidebar row -->
+
+2. If nothing is running, the graph is empty. Switch the mode to **Open** to see queued work, or
+   **All** to see everything.
+
+   <!-- TODO-SHOT KG-S3: the page in Open mode with two boards -->
+
+3. Click a task card. The task and its lineage stay bright, the rest fades. The panel on the
+   right shows the details.
+
+   <!-- TODO-SHOT KG-S4: a selected task with the side panel -->
+
+4. Press `Esc` to clear the selection, `0` to fit the graph, `/` to search.
+
+The next steps are in the [tutorial](docs/tutorial/getting-started.md). To write the graph to an
+HTML file for CI (continuous integration) or sharing, see
+[Render a static snapshot](docs/how-to/snapshot.md).
 
 ![Two boards in the graph, open work only](docs/assets/overview.png)
 
-## Features
+The image above is a static snapshot render, not the live page.
 
-- **All boards in one view.** One band per board. Pan, zoom with the wheel, `0` fits.
-- **Lineage selection.** Clicking a task selects its upstream and downstream; the rest fades.
-- **Only the arrows you need.** An arrow A to C is not drawn when A already reaches C through
-  B. The footer counts these as "implied hidden"; selecting a task still follows them.
-- **Live.** One WebSocket tails every board's `task_events`; the graph re-lays out as work moves.
-  A 15 s poll takes over when the socket is unavailable.
-- **Running work stands out.** Running tasks show their duration and a highlight that travels
-  their border, amber once the heartbeat goes quiet.
-- **Deep links.** `hermes://open/kanban-graph?task=<board>/<id>` opens the page with that task
-  selected.
-- **Static snapshot.** `snapshot/kanban_graph.py` writes the same graph as one HTML file for CI or
-  sharing, using only the Python standard library.
-- **Read-only.** Board databases are opened with `mode=ro`. The plugin never writes a board.
+## Settings
 
-![A selected task with its lineage and detail panel](docs/assets/lineage.png)
+The plugin has no configuration keys. The toolbar controls are remembered on this machine.
 
-## Requirements
+| Setting | Where | Default | What it changes |
+|---|---|---|---|
+| Mode | toolbar | **Running + lineage** | Which tasks show: running ones with their lineage, open ones, or all. |
+| Board | toolbar, **Board** | **All boards** | Show one board or all of them. |
+| Arrange | toolbar, **Arrange** | **Flow, left to right** | Layout: flow left to right, flow top down, columns by status, compact grid. |
 
-- Hermes Agent 0.21.5 or newer, with Hermes Desktop for the live page.
-- Nothing else: no API keys, no model calls, no Python or npm dependencies.
+## Troubleshooting
 
-## Install
+| Symptom | Cause | Fix |
+|---|---|---|
+| The page says "Kanban graph backend unreachable". | The Python half is not running. The plugin is not installed or enabled on that backend, or the backend was not restarted since. A remote gateway needs its own install. | Run the install again, restart the backend, then retry. To see this machine's boards, switch the window to **This device**. |
+| The graph is empty in **Running + lineage**. | No task is running. | Switch the mode to **Open** or **All**. |
+| A `hermes://open/kanban-graph` link shows only a loader. | The desktop half is switched off. | Switch on **Kanban Graph** in **Capabilities > Plugins**. |
+| The sidebar row **Kanban graph** is missing. | The desktop half is off, or the app has not loaded it yet. | Switch it on, then run **Reload desktop plugins** from the command palette. |
+| The status in the toolbar says "polling". | The live event socket is unavailable. | Nothing to do. The graph refreshes every 15 seconds. |
 
-```sh
-hermes plugins install Senci/hermes-kanban-graph --enable
-```
+## More
 
-Then, in Hermes Desktop, open **Capabilities > Plugins** and switch on **Kanban Graph**. The
-desktop half of a plugin package is opt-in and starts switched off; until you switch it on, the
-page does not exist.
-
-Open the graph from the sidebar row **Kanban graph**, the command palette ("Open kanban graph"), or
-a deep link. Step by step: [docs/tutorial/getting-started.md](docs/tutorial/getting-started.md).
-
-## Documentation
-
-| Kind | Read this when you want to |
-|---|---|
-| [Tutorial](docs/tutorial/getting-started.md) | install it and find your way around the page |
-| [How-to guides](docs/how-to/) | open a task from a script, render a snapshot, update or remove it |
-| [Reference](docs/reference/) | look up deep-link parameters, REST routes, keys, snapshot flags |
-| [Explanation](docs/explanation/architecture.md) | understand how it is built and why |
-
-## Development
-
-```sh
-git clone https://github.com/Senci/hermes-kanban-graph
-cd hermes-kanban-graph
-python3 -m unittest discover -s tests -v   # backend model and snapshot
-node tests/layout.test.mjs                 # layout and transitive reduction
-sh scripts/rebuild.sh                      # rebuild desktop/plugin.js from desktop/src (esbuild 0.28.2)
-hermes plugins validate .                  # the plugin catalog's admission check
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev loop against a running Hermes Desktop.
-
-## License
-
-[MIT](LICENSE), Senad Ličina. Icons in `snapshot/tabler-icons.json` are
-[Tabler Icons](https://tabler.io/icons), MIT.
+- [Reference](docs/reference/README.md): deep-link parameters, REST routes, snapshot flags
+- [How-to guides](docs/how-to/README.md)
+- [How it is built](docs/explanation/architecture.md)
+- [Development](CONTRIBUTING.md)
+- [License](LICENSE) (MIT)

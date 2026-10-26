@@ -1,14 +1,15 @@
 # Render a static snapshot
 
-`snapshot/kanban_graph.py` writes the graph as one self-contained HTML file: same layout, same
-lineage selection and detail panel, no live updates. Use it without Hermes Desktop: in CI, on a
-remote gateway, or to share a board's state.
+`snapshot/kanban_graph.py` writes the graph as one self-contained HTML file. It has the same
+layout, lineage selection and detail panel as the page, but no live updates. Use it without Hermes
+Desktop: in CI (continuous integration), on a remote gateway, or to share a board's state.
 
-It needs only Python 3.11+ and reads the boards read-only.
+You need Python 3.11 or newer. The script reads the boards read-only. Install the plugin first, see
+[Install and enable](../../README.md#install-and-enable).
 
 ```sh
 cd ~/.hermes/plugins/kanban-graph
-python3 snapshot/kanban_graph.py --board website-relaunch --hide-status done
+python3 snapshot/kanban_graph.py --board <slug> --hide-status done
 ```
 
 The script prints the output path and counts:
@@ -17,7 +18,9 @@ The script prints the output path and counts:
 /home/you/.hermes/cache/kanban-graph/website-relaunch.html  boards=1 tasks=6 links=8
 ```
 
-Open the file in any browser.
+Open the file in any browser. This is what you get:
+
+![Two boards in the snapshot, open work only](../assets/overview.png)
 
 ## Common variants
 
@@ -31,12 +34,11 @@ Open the file in any browser.
 | Choose the file | `--out path/to/graph.html` |
 | List board slugs | `--list` |
 
-Full flag list: [reference/snapshot-cli.md](../reference/snapshot-cli.md).
+All flags: [reference/snapshot-cli.md](../reference/snapshot-cli.md).
 
-## Another Hermes home or profile root
+## Another Hermes home
 
-The script reads boards from `$HERMES_HOME/kanban/boards/` (default `~/.hermes`). Point it
-elsewhere:
+The script reads boards from `$HERMES_HOME/kanban/boards/` (default `~/.hermes`):
 
 ```sh
 HERMES_HOME=/srv/hermes python3 snapshot/kanban_graph.py
