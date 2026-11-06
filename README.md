@@ -42,24 +42,16 @@ You need Hermes Agent 0.21.5 or newer and Hermes Desktop. No API keys, no other 
 5. If the sidebar row does not appear within a few seconds, open the command palette (`Ctrl+K`, or
    `Cmd+K` on macOS) and run **Reload desktop plugins**.
 
-<!-- TODO-SHOT KG-S1: Capabilities > Plugins with Kanban Graph switched on -->
-
 ## First use
 
 1. Click **Kanban graph** in the sidebar. Or open the command palette and run **Open kanban
    graph**.
 
-   <!-- TODO-SHOT KG-S2: the page in Running + lineage mode with the sidebar row -->
-
 2. If nothing is running, the graph is empty. Switch the mode to **Open** to see queued work, or
    **All** to see everything.
 
-   <!-- TODO-SHOT KG-S3: the page in Open mode with two boards -->
-
 3. Click a task card. The task and its lineage stay bright, the rest fades. The panel on the
    right shows the details.
-
-   <!-- TODO-SHOT KG-S4: a selected task with the side panel -->
 
 4. Press `Esc` to clear the selection, `0` to fit the graph, `/` to search.
 
