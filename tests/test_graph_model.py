@@ -105,6 +105,27 @@ class GraphModelTest(unittest.TestCase):
     def test_lineage(self) -> None:
         self.assertEqual(gm.lineage({"b"}, LINKS), {"a", "b", "c", "e"})
 
+    def _state_db(self, sessions, messages=()) -> None:
+        con = sqlite3.connect(self.tmp / "state.db")
+        con.executescript("create table sessions (id text primary key, source text, title text, started_at real);"
+                          "create table messages (id integer primary key, session_id text, role text,"
+                          " content text, tool_calls text, timestamp real);")
+        con.executemany("insert into sessions values (?,?,?,?)", sessions)
+        con.executemany("insert into messages (session_id, role, content, tool_calls, timestamp)"
+                        " values (?,?,?,?,?)", messages)
+        con.commit()
+        con.close()
+
+    def test_live_worker_returns_own_titled_session(self) -> None:
+        self._state_db([("session-a", "kanban", "Task A", 1003)],
+                       [("session-a", "assistant", "working", "[]", 1004)])
+        got = gm.live_worker(self.tmp, "default", "Task A", 1000)
+        self.assertEqual((got["sid"], got["say"]), ("session-a", "working"))
+
+    def test_live_worker_never_borrows_another_task_session(self) -> None:
+        self._state_db([("session-b", "kanban", "Task B", 1002), ("session-u", "kanban", None, 1005)])
+        self.assertIsNone(gm.live_worker(self.tmp, "default", "Task A", 1000))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -123,7 +123,7 @@ def profile_state_db(root: Path, profile: str) -> Path:
 
 def live_worker(root: Path, profile: str, title: str, run_start: int) -> dict | None:
     """The worker's chat session for a live run: source=kanban, titled after the task, started
-    with the run. Falls back to the time window alone for sessions not yet titled."""
+    with the run. No guess when the title is missing: another task's session is never shown."""
     db = profile_state_db(root, profile)
     if not db.exists():
         return None
@@ -133,9 +133,6 @@ def live_worker(root: Path, profile: str, title: str, run_start: int) -> dict | 
         try:
             s = con.execute("select * from sessions where source='kanban' and title=? and started_at between ? and ? "
                             "order by started_at desc limit 1", (title, lo, hi)).fetchone()
-            if not s:
-                s = con.execute("select * from sessions where source='kanban' and started_at between ? and ? "
-                                "order by started_at limit 1", (lo, hi)).fetchone()
             if not s:
                 return None
             s = dict(s)

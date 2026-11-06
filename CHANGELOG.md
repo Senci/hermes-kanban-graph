@@ -13,6 +13,8 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 
 - The snapshot renders inside a sandboxed frame without storage; the arrange mode falls back to flow.
+- A live run shows no worker activity until its session carries the task title, instead of showing
+  another task's session (#3).
 
 ### Changed
 
