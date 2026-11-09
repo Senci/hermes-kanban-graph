@@ -22,7 +22,7 @@ import { KG_MODES } from './layout.js'
 import { ALL, meta, MODES, stripeTone } from './model.js'
 import { CardView } from './view.js'
 import { NH, NW } from './sizes.js'
-import { $arrange, $board, $mode, $now, $socket, api, resetToolbar } from './state.js'
+import { $arrange, $board, $mode, $now, $paused, $socket, api, resetToolbar, setPaused } from './state.js'
 
 // Same signal as the app's kanban cards (plugins/kanban/ui.tsx): a heartbeat older than 2 min
 // means the worker may be gone, so the arc slows down and turns amber.
@@ -153,10 +153,11 @@ export function Panel({ t, A, B, byK, hidden, generated, onPick, onClose }) {
 }
 
 export function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
-  const mode = useValue($mode), board = useValue($board), arrange = useValue($arrange), sock = useValue($socket)
+  const mode = useValue($mode), board = useValue($board), arrange = useValue($arrange), sock = useValue($socket), paused = useValue($paused)
   // A failing graph fetch outranks the socket: the socket can be live on a different backend.
   const link = failed ? 'offline' : sock === 'live' ? 'live' : 'polling'
-  const linkTip = { live: 'Live: board events stream in', polling: 'Polling every 15 s (event socket unavailable)', offline: `Backend unreachable: ${failed}` }[link]
+  const frozen = paused && !failed
+  const linkTip = frozen ? 'Paused: the graph keeps what it shows until you resume' : { live: 'Live: board events stream in', polling: 'Polling every 15 s (event socket unavailable)', offline: `Backend unreachable: ${failed}` }[link]
   return h(Bar, { prefix: 'kg' },
     h(Codicon, { name: 'type-hierarchy', style: { color: TONE.accent } }),
     h('strong', { style: { fontSize: 13, marginRight: 4 } }, 'Kanban graph'),
@@ -176,7 +177,10 @@ export function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
     h(Tip, { label: linkTip },
       h('span', { style: { fontSize: 11.5, color: TONE.muted, display: 'inline-flex', alignItems: 'center' } },
         h('span', { className: 'kg-live-dot', style: { background: link === 'live' ? TONE.green : link === 'offline' ? TONE.red : TONE.faint } }),
-        link)),
+        frozen ? 'paused' : link)),
+    h(Tip, { label: paused ? 'Resume live updates' : 'Pause live updates' },
+      h(Button, { size: 'icon-xs', variant: paused ? 'secondary' : 'ghost', onClick: () => setPaused(!paused), 'aria-label': 'Pause live updates', 'aria-pressed': paused },
+        h(Codicon, { name: paused ? 'debug-start' : 'debug-pause' }))),
     h(CardView, null),
     h(Tip, { label: 'Zoom out (-)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(0.8), 'aria-label': 'Zoom out' }, h(Codicon, { name: 'zoom-out' }))),
     h(Tip, { label: 'Fit (0)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: onFit, 'aria-label': 'Fit' }, h(Codicon, { name: 'screen-full' }))),

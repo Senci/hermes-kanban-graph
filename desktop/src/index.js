@@ -26,7 +26,7 @@ import { CSS } from './css.js'
 import { COLOR_BYS, DEFAULTS, DENSITIES, ID, KEEPALIVE_S, PATH, SUBTITLE_FIELDS } from './model.js'
 import { GraphPage } from './page.js'
 import { route } from './route.js'
-import { $arrange, $board, $color, $density, $fields, $mode, $now, $socket, setApi } from './state.js'
+import { $arrange, $board, $color, $density, $fields, $mode, $now, $paused, $socket, setApi } from './state.js'
 
 export default {
   id: ID,
@@ -47,7 +47,8 @@ export default {
       status: $socket,
       invalidate: [ID, 'graph'],
       keepaliveS: KEEPALIVE_S,
-      onTick: now => $now.set(now)
+      isPaused: () => $paused.get(),
+      onTick: now => { if (!$paused.get()) $now.set(now) }
     })
 
     ctx.onDispose(() => {

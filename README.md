@@ -76,6 +76,8 @@ The plugin has no configuration keys. The toolbar controls are remembered on thi
 | Subtitle fields | toolbar, **Card view** | **Id, assignee, model** | Which of the three the subtitle line shows. A running card shows its run time and, if on, its assignee. |
 | Stripe color | toolbar, **Card view** | **Status** | What the stripe on the left of a card shows: status, priority (red, amber, blue, graded against the highest priority in view) or assignee (one fixed tone per name). The status icon stays on the card either way. |
 
+The pause button next to the status text freezes the graph where it is: the poll, the event socket and the run-time clock stop until you press it again, which fetches once. It is not remembered between visits.
+
 The reset button (**Reset toolbar to defaults**) at the right end of the toolbar clears these remembered choices and returns to the defaults above.
 
 ## Troubleshooting

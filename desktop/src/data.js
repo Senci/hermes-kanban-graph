@@ -3,7 +3,7 @@ import { useQuery, useValue } from '@hermes/plugin-sdk'
 import { useBackend, useLiveQuery } from './kit/live.js'
 
 import { ALL, ID, MODE_PARAMS } from './model.js'
-import { $socket, api } from './state.js'
+import { $paused, $socket, api } from './state.js'
 
 export function graphPath(mode, board) {
   const q = new URLSearchParams(MODE_PARAMS[mode] || {})
@@ -16,12 +16,13 @@ export function graphPath(mode, board) {
 // graph, so connection and profile are in the key and placeholder data crosses only a same-backend change.
 export function useGraph(mode, board) {
   const { conn, profile } = useBackend()
-  const live = useValue($socket) === 'live'
+  const live = useValue($socket) === 'live', paused = useValue($paused)
   return useLiveQuery({
     queryKey: [ID, 'graph', conn, profile, mode, board],
     queryFn: () => (api ? api.rest(graphPath(mode, board)) : Promise.reject(new Error('kanban-graph not loaded'))),
     placeholderData: (prev, prevQuery) => (prevQuery && prevQuery.queryKey[2] === conn && prevQuery.queryKey[3] === profile ? prev : undefined),
-    live
+    live,
+    paused
   })
 }
 

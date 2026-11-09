@@ -82,5 +82,21 @@ class StripeColorTest(unittest.TestCase):
         self.assertTrue(has(r"background: stripeTone\(t, view\.color, view\.maxP\)"))
 
 
+class PauseTest(unittest.TestCase):
+    def test_toggle_is_pressed_state_and_named(self) -> None:
+        self.assertTrue(has(r'"aria-label": "Pause live updates", "aria-pressed": paused'))
+
+    def test_pause_stops_polling_socket_refetch_and_the_clock(self) -> None:
+        self.assertTrue(has(r"refetchInterval: paused \? false"))
+        self.assertTrue(has(r"if \(isPaused\?\.\(\)\) return"))
+        self.assertTrue(has(r"if \(!\$paused\.get\(\)\) \$now\.set\(now\)"))
+
+    def test_resume_refetches_the_graph_once(self) -> None:
+        self.assertTrue(has(r'if \(!on\) void queryClient\d*\.invalidateQueries\(\{ queryKey: \[ID, "graph"\] \}\)'))
+
+    def test_pause_is_not_remembered(self) -> None:
+        self.assertNotIn("$paused", block(r"var PREFS = \{([^}]*)\}"))
+
+
 if __name__ == "__main__":
     unittest.main()

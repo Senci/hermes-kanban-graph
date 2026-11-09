@@ -13,7 +13,7 @@ import { KG_MODES, kgHeadFont, kgLayout } from './layout.js'
 import { ALL, ANIM_MS, SEARCH_DEBOUNCE_MS } from './model.js'
 import { applyRoute, payloadIsFor, route } from './route.js'
 import { NH, NW } from './sizes.js'
-import { $arrange, $board, $color, $density, $fields, $mode, api } from './state.js'
+import { $arrange, $board, $color, $density, $fields, $mode, api, setPaused } from './state.js'
 
 export function GraphPage() {
   // The deep link is authoritative on entry, so the first query already asks for the linked board
@@ -28,6 +28,8 @@ export function GraphPage() {
   const { data: g, error, isLoading, isFetching, isPlaceholderData } = useGraph(mode, board)
   const { data: boardList } = useBoards()
   const backend = useBackend()
+  // A pause belongs to this visit; coming back to a frozen graph would look broken.
+  useEffect(() => () => setPaused(false), [])
   const [sel, setSel] = useState(() => entry?.task || null)
   const [search, setSearch] = useState('')
   const [off, setOff] = useState(() => new Set())

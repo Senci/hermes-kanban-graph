@@ -9,10 +9,10 @@ var LIVE_SAFETY_MS = 6e4;
 function useBackend() {
   return { conn: useValue(host.state.connectionId) ?? "", profile: useValue(host.state.profile) ?? "" };
 }
-function useLiveQuery({ live = false, pollMs = POLL_FLOOR_MS, liveMs = LIVE_SAFETY_MS, ...query }) {
-  return useQuery({ ...query, refetchInterval: live ? liveMs : pollMs });
+function useLiveQuery({ live = false, paused = false, pollMs = POLL_FLOOR_MS, liveMs = LIVE_SAFETY_MS, ...query }) {
+  return useQuery({ ...query, refetchInterval: paused ? false : live ? liveMs : pollMs, ...paused ? { refetchOnWindowFocus: false, refetchOnReconnect: false } : {} });
 }
-function startLiveChannel(ctx, { status = atom("off"), path = "/events", invalidate, keepaliveS = 15, burstMs = 400, onTick }) {
+function startLiveChannel(ctx, { status = atom("off"), path = "/events", invalidate, keepaliveS = 15, burstMs = 400, onTick, isPaused }) {
   let pending = null;
   let lastFrame = 0;
   let closeSocket = null;
@@ -29,6 +29,7 @@ function startLiveChannel(ctx, { status = atom("off"), path = "/events", invalid
     if (pending) return;
     pending = ctx.setTimeout(() => {
       pending = null;
+      if (isPaused?.()) return;
       void queryClient.invalidateQueries({ queryKey: invalidate });
     }, burstMs);
   };
@@ -636,7 +637,7 @@ import { Button, Codicon, Popover, PopoverContent, PopoverTrigger, SegmentedCont
 import { createElement as h2 } from "react";
 
 // desktop/src/state.js
-import { atom as atom2 } from "@hermes/plugin-sdk";
+import { atom as atom2, queryClient as queryClient2 } from "@hermes/plugin-sdk";
 var api = null;
 var setApi = (ctx) => {
   api = ctx;
@@ -648,17 +649,24 @@ var $arrange = atom2(DEFAULTS.arrange);
 var $density = atom2(DEFAULTS.density);
 var $fields = atom2(DEFAULTS.fields);
 var $color = atom2(DEFAULTS.color);
+var $paused = atom2(false);
 var $socket = atom2("off");
 var PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density, fields: $fields, color: $color };
 function setPref(key, value) {
   PREFS[key].set(value);
   api?.storage.set(key, value);
 }
+function setPaused(on) {
+  if ($paused.get() === on) return;
+  $paused.set(on);
+  if (!on) void queryClient2.invalidateQueries({ queryKey: [ID, "graph"] });
+}
 function resetToolbar() {
   for (const [key, a] of Object.entries(PREFS)) {
     api?.storage.remove(key);
     a.set(DEFAULTS[key]);
   }
+  setPaused(false);
 }
 
 // desktop/src/view.js
@@ -872,9 +880,10 @@ function Panel({ t, A, B, byK, hidden, generated, onPick, onClose }) {
   );
 }
 function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
-  const mode = useValue3($mode), board = useValue3($board), arrange = useValue3($arrange), sock = useValue3($socket);
+  const mode = useValue3($mode), board = useValue3($board), arrange = useValue3($arrange), sock = useValue3($socket), paused = useValue3($paused);
   const link = failed ? "offline" : sock === "live" ? "live" : "polling";
-  const linkTip = { live: "Live: board events stream in", polling: "Polling every 15 s (event socket unavailable)", offline: `Backend unreachable: ${failed}` }[link];
+  const frozen = paused && !failed;
+  const linkTip = frozen ? "Paused: the graph keeps what it shows until you resume" : { live: "Live: board events stream in", polling: "Polling every 15 s (event socket unavailable)", offline: `Backend unreachable: ${failed}` }[link];
   return h3(
     Bar,
     { prefix: "kg" },
@@ -920,7 +929,16 @@ function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
           "span",
           { style: { fontSize: 11.5, color: TONE.muted, display: "inline-flex", alignItems: "center" } },
           h3("span", { className: "kg-live-dot", style: { background: link === "live" ? TONE.green : link === "offline" ? TONE.red : TONE.faint } }),
-          link
+          frozen ? "paused" : link
+        )
+      ),
+      h3(
+        Tip2,
+        { label: paused ? "Resume live updates" : "Pause live updates" },
+        h3(
+          Button2,
+          { size: "icon-xs", variant: paused ? "secondary" : "ghost", onClick: () => setPaused(!paused), "aria-label": "Pause live updates", "aria-pressed": paused },
+          h3(Codicon2, { name: paused ? "debug-start" : "debug-pause" })
         )
       ),
       h3(CardView, null),
@@ -964,12 +982,13 @@ function graphPath(mode, board) {
 }
 function useGraph(mode, board) {
   const { conn, profile } = useBackend();
-  const live = useValue4($socket) === "live";
+  const live = useValue4($socket) === "live", paused = useValue4($paused);
   return useLiveQuery({
     queryKey: [ID, "graph", conn, profile, mode, board],
     queryFn: () => api ? api.rest(graphPath(mode, board)) : Promise.reject(new Error("kanban-graph not loaded")),
     placeholderData: (prev, prevQuery) => prevQuery && prevQuery.queryKey[2] === conn && prevQuery.queryKey[3] === profile ? prev : void 0,
-    live
+    live,
+    paused
   });
 }
 function useBoards() {
@@ -1056,6 +1075,7 @@ function GraphPage() {
   const { data: g, error, isLoading, isFetching, isPlaceholderData } = useGraph(mode, board);
   const { data: boardList } = useBoards();
   const backend = useBackend();
+  useEffect2(() => () => setPaused(false), []);
   const [sel, setSel] = useState2(() => entry?.task || null);
   const [search, setSearch] = useState2("");
   const [off, setOff] = useState2(() => /* @__PURE__ */ new Set());
@@ -1364,7 +1384,10 @@ var index_default = {
       status: $socket,
       invalidate: [ID, "graph"],
       keepaliveS: KEEPALIVE_S,
-      onTick: (now) => $now.set(now)
+      isPaused: () => $paused.get(),
+      onTick: (now) => {
+        if (!$paused.get()) $now.set(now);
+      }
     });
     ctx.onDispose(() => {
       stopLive();
