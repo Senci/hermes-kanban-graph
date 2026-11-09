@@ -24,6 +24,8 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Layout tests (node, no dependencies)
         run: node tests/layout.test.mjs
+      - name: Card rule tests (node, no dependencies)
+        run: node tests/card.test.mjs
       - name: Desktop half parses
         run: node --check desktop/plugin.js
 
