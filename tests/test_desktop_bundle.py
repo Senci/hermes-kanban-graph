@@ -40,7 +40,7 @@ class CardTitleTest(unittest.TestCase):
 
 class PriorityBadgeTest(unittest.TestCase):
     def test_badge_shows_only_above_zero_and_names_the_value(self) -> None:
-        self.assertTrue(has(r"t\.p > 0 \? h\d*\(\"span\", \{ className: \"kg-pri\", title: `Priority \$\{t\.p\}` \}, `P\$\{t\.p\}`"))
+        self.assertTrue(has(r"t\.p > 0 \? h\d*\(\"span\", \{ className: \"kg-pri\", title: `Priority \$\{t\.p\}`, style: \{ color: TONE\.yellow \} \}, h\d*\(Codicon\d*, \{ name: \"arrow-up\" \}\), t\.p\)"))
 
     def test_card_accessible_name_carries_priority(self) -> None:
         self.assertTrue(has(r'"aria-label": `\$\{t\.t\}, \$\{t\.s\}\$\{t\.p > 0 \? `, priority \$\{t\.p\}` : ""\}'))

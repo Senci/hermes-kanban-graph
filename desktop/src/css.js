@@ -12,7 +12,7 @@ const nodeText = `
 .kg-node .kg-tt{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
 .kg-node .kg-flags{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px}
 .kg-node .kg-stale{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;line-height:1.3;color:var(--ui-text-secondary)}
-.kg-node .kg-pri{padding:0 5px;border:1px solid var(--ui-stroke-primary);border-radius:999px;font-size:10px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;color:var(--ui-text-secondary)}
+.kg-node .kg-pri{display:inline-flex;align-items:center;gap:1px;font-size:10px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums}
 .kg-node .kg-s{font-size:11px;line-height:1.3;color:var(--ui-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 `
 const panel = `

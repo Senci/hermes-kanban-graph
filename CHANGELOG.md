@@ -19,6 +19,7 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - A card title wraps to two lines and then ends in an ellipsis; the full title stays in the tooltip and the panel.
+- The priority badge uses the host's arrow icon with the number, in the same yellow as the stale marker, instead of a `P<n>` pill.
 
 ## [0.2.3] - 2026-11-09
 
