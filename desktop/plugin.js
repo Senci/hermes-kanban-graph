@@ -1,6 +1,6 @@
 // desktop/src/index.js
 import { host as host2, ROUTES_AREA, SIDEBAR_NAV_AREA, PALETTE_AREA } from "@hermes/plugin-sdk";
-import { createElement as h4 } from "react";
+import { createElement as h5 } from "react";
 
 // desktop/src/kit/live.js
 import { atom, host, queryClient, useQuery, useValue } from "@hermes/plugin-sdk";
@@ -9,10 +9,10 @@ var LIVE_SAFETY_MS = 6e4;
 function useBackend() {
   return { conn: useValue(host.state.connectionId) ?? "", profile: useValue(host.state.profile) ?? "" };
 }
-function useLiveQuery({ live = false, pollMs = POLL_FLOOR_MS, liveMs = LIVE_SAFETY_MS, ...query }) {
-  return useQuery({ ...query, refetchInterval: live ? liveMs : pollMs });
+function useLiveQuery({ live = false, paused = false, pollMs = POLL_FLOOR_MS, liveMs = LIVE_SAFETY_MS, ...query }) {
+  return useQuery({ ...query, refetchInterval: paused ? false : live ? liveMs : pollMs, ...paused ? { refetchOnWindowFocus: false, refetchOnReconnect: false } : {} });
 }
-function startLiveChannel(ctx, { status = atom("off"), path = "/events", invalidate, keepaliveS = 15, burstMs = 400, onTick }) {
+function startLiveChannel(ctx, { status = atom("off"), path = "/events", invalidate, keepaliveS = 15, burstMs = 400, onTick, isPaused }) {
   let pending = null;
   let lastFrame = 0;
   let closeSocket = null;
@@ -29,6 +29,7 @@ function startLiveChannel(ctx, { status = atom("off"), path = "/events", invalid
     if (pending) return;
     pending = ctx.setTimeout(() => {
       pending = null;
+      if (isPaused?.()) return;
       void queryClient.invalidateQueries({ queryKey: invalidate });
     }, burstMs);
   };
@@ -173,7 +174,7 @@ function dagBoard(tasks, links, rank, ord, mode, sz) {
     const depth = dagLayers(ids, parents, children, ord);
     const cols2 = [...new Set(ids.map((k) => status.get(k)))].sort((a, b) => (rank.get(a) ?? 99) - (rank.get(b) ?? 99));
     const maxRows = Math.max(6, Math.ceil(Math.sqrt(ids.length * 2)));
-    let x2 = 0, h5 = 0;
+    let x2 = 0, h6 = 0;
     for (const s of cols2) {
       const col = ids.filter((k) => status.get(k) === s).sort((a, b) => depth.get(a) - depth.get(b) || ord.get(a) - ord.get(b));
       for (let i = 0; i < col.length; i++) {
@@ -181,9 +182,9 @@ function dagBoard(tasks, links, rank, ord, mode, sz) {
       }
       const sub = Math.ceil(col.length / maxRows);
       x2 += sub * (NW2 + GAP_Y) - GAP_Y + GAP_X;
-      h5 = Math.max(h5, BAND_HEAD + Math.min(col.length, maxRows) * (NH2 + GAP_Y) - GAP_Y);
+      h6 = Math.max(h6, BAND_HEAD + Math.min(col.length, maxRows) * (NH2 + GAP_Y) - GAP_Y);
     }
-    return { xy, h: h5, w: Math.max(BAND_MIN_W, x2 - GAP_X) };
+    return { xy, h: h6, w: Math.max(BAND_MIN_W, x2 - GAP_X) };
   }
   const root = new Map(ids.map((k) => [k, k]));
   const find = (v) => {
@@ -447,6 +448,36 @@ var MODES = [
   { id: "open", label: "Open" },
   { id: "all", label: "All" }
 ];
+var DEFAULTS = { mode: "running", board: ALL, arrange: "flow", density: "comfortable", color: "status", fields: ["id", "assignee", "model"] };
+var DENSITIES = [
+  { id: "comfortable", label: "Comfortable" },
+  { id: "compact", label: "Compact" }
+];
+var COLOR_BYS = [
+  { id: "status", label: "Status" },
+  { id: "priority", label: "Priority" },
+  { id: "assignee", label: "Assignee" }
+];
+var PEOPLE = [ui("blue"), ui("purple"), ui("green"), ui("yellow"), ui("red")];
+function stripeTone(t, color, maxP) {
+  if (color === "priority") {
+    if (!(t.p > 0)) return ui("text-quaternary");
+    const r = t.p / maxP;
+    return r >= 0.75 ? ui("red") : r >= 0.4 ? ui("yellow") : ui("blue");
+  }
+  if (color === "assignee") {
+    if (!t.a) return ui("text-quaternary");
+    let n = 0;
+    for (const ch of t.a) n = n * 31 + ch.charCodeAt(0) >>> 0;
+    return PEOPLE[n % PEOPLE.length];
+  }
+  return meta(t.s).tone;
+}
+var SUBTITLE_FIELDS = [
+  { id: "id", label: "Id" },
+  { id: "assignee", label: "Assignee" },
+  { id: "model", label: "Model" }
+];
 var MODE_PARAMS = { running: { focus: "running" }, open: { hide: "done" }, all: {} };
 
 // desktop/src/css.js
@@ -454,9 +485,12 @@ var bar = `
 .kg-bar .kg-seg{grid-auto-columns:auto}
 `;
 var nodeText = `
-.kg-node .kg-t{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;white-space:nowrap}
-.kg-node .kg-t span{overflow:hidden;text-overflow:ellipsis}
-.kg-node .kg-s{font-size:11px;color:var(--ui-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kg-node .kg-t{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;font-weight:600;line-height:1.3}
+.kg-node .kg-tt{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.kg-node .kg-flags{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px}
+.kg-node .kg-stale{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;line-height:1.3;color:var(--ui-text-secondary)}
+.kg-node .kg-pri{padding:0 5px;border:1px solid var(--ui-stroke-primary);border-radius:999px;font-size:10px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;color:var(--ui-text-secondary)}
+.kg-node .kg-s{font-size:11px;line-height:1.3;color:var(--ui-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 `;
 var panel = `
 .kg-pbody pre{margin:4px 0 10px;padding:8px;white-space:pre-wrap;word-break:break-word;border:1px solid var(--ui-stroke-secondary);border-radius:6px;background:var(--ui-bg-editor);font:11.5px/1.45 var(--font-mono,ui-monospace,monospace)}
@@ -468,13 +502,17 @@ var end = `
 .kg-acts>div{display:grid;grid-template-columns:44px 96px 1fr;gap:6px;padding:2px 0;border-top:1px solid var(--ui-stroke-secondary)}
 .kg-acts b{font-weight:600;color:var(--ui-green)}
 .kg-acts span:last-child{display:-webkit-box;overflow:hidden;word-break:break-word;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.kg-view{display:grid;gap:10px;font-size:12px}
+.kg-view-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.kg-view-row>span:first-child,.kg-view-sub>span{color:var(--ui-text-secondary)}
+.kg-view-sub{display:grid;gap:6px}
 .kg-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
 `;
 var CSS = graphCss("kg", ANIM_MS, { bar, nodeText, panel, end });
 
 // desktop/src/page.js
-import { EmptyState, ErrorState, Loader, useValue as useValue4 } from "@hermes/plugin-sdk";
-import { createElement as h3, Fragment as Fragment2, useCallback as useCallback2, useEffect as useEffect2, useLayoutEffect, useMemo, useRef as useRef2, useState as useState2 } from "react";
+import { EmptyState, ErrorState, Loader, useValue as useValue5 } from "@hermes/plugin-sdk";
+import { createElement as h4, Fragment as Fragment2, useCallback as useCallback2, useEffect as useEffect2, useLayoutEffect, useMemo, useRef as useRef2, useState as useState2 } from "react";
 
 // desktop/src/kit/shell.js
 import { createElement as h } from "react";
@@ -570,20 +608,20 @@ function useViewport(stageRef, worldRef, onScale, { prefix, animMs = 350, minSca
 
 // desktop/src/components.js
 import {
-  Button,
-  Codicon,
+  Button as Button2,
+  Codicon as Codicon2,
   CopyButton,
   SearchField,
-  SegmentedControl,
+  SegmentedControl as SegmentedControl2,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Tip,
-  useValue as useValue2
+  Tip as Tip2,
+  useValue as useValue3
 } from "@hermes/plugin-sdk";
-import { createElement as h2, Fragment } from "react";
+import { createElement as h3, Fragment } from "react";
 
 // desktop/src/format.js
 var fmt = (t) => t ? new Date(t * 1e3).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "";
@@ -593,29 +631,98 @@ function dur(s) {
   const d = Math.floor(s / 86400), hr = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
   return d ? `${d}d ${hr}h` : hr ? `${hr}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`;
 }
+var STALE_RUN_S = 300;
+var staleAge = (t, run, now) => {
+  const since = run.hb || t.hb || run.a;
+  return since && now - since > STALE_RUN_S ? now - since : 0;
+};
 var curRun = (t) => (t.runs || []).find((u) => u.s === "running");
 
+// desktop/src/view.js
+import { Button, Codicon, Popover, PopoverContent, PopoverTrigger, SegmentedControl, Switch, Tip, useValue as useValue2 } from "@hermes/plugin-sdk";
+import { createElement as h2 } from "react";
+
 // desktop/src/state.js
-import { atom as atom2 } from "@hermes/plugin-sdk";
+import { atom as atom2, queryClient as queryClient2 } from "@hermes/plugin-sdk";
 var api = null;
 var setApi = (ctx) => {
   api = ctx;
 };
 var $now = atom2(Math.floor(Date.now() / 1e3));
-var $mode = atom2("running");
-var $board = atom2(ALL);
-var $arrange = atom2("flow");
+var $minute = atom2(Math.floor(Date.now() / 6e4));
+var $mode = atom2(DEFAULTS.mode);
+var $board = atom2(DEFAULTS.board);
+var $arrange = atom2(DEFAULTS.arrange);
+var $density = atom2(DEFAULTS.density);
+var $fields = atom2(DEFAULTS.fields);
+var $color = atom2(DEFAULTS.color);
+var $paused = atom2(false);
 var $socket = atom2("off");
+var PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density, fields: $fields, color: $color };
+function setPref(key, value) {
+  PREFS[key].set(value);
+  api?.storage.set(key, value);
+}
+function setPaused(on) {
+  if ($paused.get() === on) return;
+  $paused.set(on);
+  if (!on) void queryClient2.invalidateQueries({ queryKey: [ID, "graph"] });
+}
+function resetToolbar() {
+  for (const [key, a] of Object.entries(PREFS)) {
+    api?.storage.remove(key);
+    a.set(DEFAULTS[key]);
+  }
+  setPaused(false);
+}
+
+// desktop/src/view.js
+function CardView() {
+  const density = useValue2($density), fields = useValue2($fields), color = useValue2($color);
+  const toggleField = (id) => setPref("fields", SUBTITLE_FIELDS.map((f) => f.id).filter((x) => x === id ? !fields.includes(x) : fields.includes(x)));
+  return h2(
+    Popover,
+    null,
+    h2(Tip, { label: "Card view" }, h2(PopoverTrigger, { asChild: true }, h2(Button, { size: "icon-xs", variant: "ghost", "aria-label": "Card view" }, h2(Codicon, { name: "settings-gear" })))),
+    h2(
+      PopoverContent,
+      { align: "end", className: "kg-view" },
+      h2(
+        "div",
+        { className: "kg-view-row", role: "group", "aria-label": "Density" },
+        h2("span", null, "Density"),
+        h2(SegmentedControl, { options: DENSITIES, value: density, onChange: (id) => setPref("density", id) })
+      ),
+      h2(
+        "div",
+        { className: "kg-view-row", role: "group", "aria-label": "Stripe color" },
+        h2("span", null, "Stripe color"),
+        h2(SegmentedControl, { options: COLOR_BYS, value: color, onChange: (id) => setPref("color", id) })
+      ),
+      h2(
+        "div",
+        { className: "kg-view-sub", role: "group", "aria-label": "Subtitle fields" },
+        h2("span", null, "Subtitle shows"),
+        ...SUBTITLE_FIELDS.map((f) => h2(
+          "label",
+          { key: f.id, className: "kg-view-row" },
+          h2("span", null, f.label),
+          h2(Switch, { size: "xs", checked: fields.includes(f.id), disabled: density === "compact", onCheckedChange: () => toggleField(f.id), "aria-label": `Show ${f.label.toLowerCase()} in the subtitle` })
+        ))
+      )
+    )
+  );
+}
 
 // desktop/src/components.js
 var STALE_HEARTBEAT_S = 120;
 function Arc({ hb }) {
-  const now = useValue2($now);
-  return h2("span", { "aria-hidden": true, className: `kg-arc${hb && now - hb > STALE_HEARTBEAT_S ? " stale" : ""}` });
+  const now = useValue3($now);
+  return h3("span", { "aria-hidden": true, className: `kg-arc${hb && now - hb > STALE_HEARTBEAT_S ? " stale" : ""}` });
 }
 function LiveDuration({ since, suffix = "" }) {
-  const now = useValue2($now);
-  return h2(Fragment, null, dur(now - since) + suffix);
+  const now = useValue3($now);
+  return h3(Fragment, null, dur(now - since) + suffix);
 }
 var SEP = " · ";
 var plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
@@ -626,10 +733,13 @@ var onActivate = (fn) => (e) => {
     fn();
   }
 };
-var Node = ({ t, at, cls, onPick }) => {
+var Node = ({ t, at, cls, view, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk;
-  const sub = [t.id, t.a, t.m && t.m.replace("claude-", "")].filter(Boolean).join(SEP);
-  return h2(
+  const minute = useValue3($minute);
+  const silent = run ? Math.floor(staleAge(t, run, minute * 60) / 60) : 0;
+  const show = (id) => view.fields.includes(id);
+  const sub = [show("id") && t.id, show("assignee") && t.a, show("model") && t.m && t.m.replace("claude-", "")].filter(Boolean).join(SEP);
+  return h3(
     "div",
     {
       className: `kg-node${run ? " live" : ""}${cls}`,
@@ -637,7 +747,7 @@ var Node = ({ t, at, cls, onPick }) => {
       title: t.t,
       role: "button",
       tabIndex: 0,
-      "aria-label": `${t.t}, ${t.s}`,
+      "aria-label": `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ""}${view.color === "assignee" && t.a ? `, ${t.a}` : ""}${silent ? `, no heartbeat for ${silent} min` : ""}`,
       "data-k": t.k,
       "data-id": t.id,
       onClick: (e) => {
@@ -646,46 +756,52 @@ var Node = ({ t, at, cls, onPick }) => {
       },
       onKeyDown: onActivate(() => onPick(t.k))
     },
-    h2("div", { className: "kg-stripe", style: { background: m.tone } }),
-    run ? h2(Arc, { hb: run.hb || t.hb }) : null,
-    h2(
+    h3("div", { className: "kg-stripe", style: { background: stripeTone(t, view.color, view.maxP) } }),
+    run ? h3(Arc, { hb: run.hb || t.hb }) : null,
+    h3(
       "div",
       { className: "kg-t" },
-      h2(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
-      h2("span", null, t.t),
-      warn ? h2(
+      h3(Codicon2, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
+      h3("span", { className: "kg-tt" }, t.t),
+      t.p > 0 || warn || silent ? h3(
         "span",
-        { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? "s" : ""}`].filter(Boolean).join(". "), style: { marginLeft: "auto", display: "inline-flex" } },
-        h2(Codicon, { name: "warning", style: { color: TONE.red } })
+        { className: "kg-flags" },
+        silent ? h3("span", { className: "kg-stale", title: `No heartbeat for ${silent} min` }, h3(Codicon2, { name: "watch", style: { color: TONE.yellow } }), `stale ${silent}m`) : null,
+        t.p > 0 ? h3("span", { className: "kg-pri", title: `Priority ${t.p}` }, `P${t.p}`) : null,
+        warn ? h3(
+          "span",
+          { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? "s" : ""}`].filter(Boolean).join(". "), style: { display: "inline-flex" } },
+          h3(Codicon2, { name: "warning", style: { color: TONE.red } })
+        ) : null
       ) : null
     ),
-    h2(
+    view.density === "compact" || !(run || sub) ? null : h3(
       "div",
       { className: "kg-s", style: run ? { color: TONE.green } : null },
-      run ? h2(Fragment, null, "running ", h2(LiveDuration, { since: run.a }), t.a ? `${SEP}${t.a}` : "") : sub
+      run ? h3(Fragment, null, "running ", h3(LiveDuration, { since: run.a }), t.a && show("assignee") ? `${SEP}${t.a}` : "") : sub
     )
   );
 };
 function Row({ t, onPick }) {
   const m = meta(t.s);
-  return h2(
+  return h3(
     "div",
     { className: "kg-rl", role: "button", tabIndex: 0, "aria-label": `${t.t}, ${t.s}`, onClick: () => onPick(t.k, true), onKeyDown: onActivate(() => onPick(t.k, true)) },
-    h2(Codicon, { name: m.icon, style: { color: m.tone } }),
-    h2("span", null, t.t),
-    h2("small", null, t.id)
+    h3(Codicon2, { name: m.icon, style: { color: m.tone } }),
+    h3("span", null, t.t),
+    h3("small", null, t.id)
   );
 }
 function KV({ rows }) {
   const kept = rows.filter(([, v]) => v !== "" && v !== null && v !== void 0 && v !== 0 && v !== false);
-  return h2("div", { className: "kg-kv" }, ...kept.flatMap(([k, v], i) => [h2("span", { key: `k${i}` }, k), h2("span", { key: `v${i}` }, v)]));
+  return h3("div", { className: "kg-kv" }, ...kept.flatMap(([k, v], i) => [h3("span", { key: `k${i}` }, k), h3("span", { key: `v${i}` }, v)]));
 }
 function LiveRun({ t, run, generated }) {
   const L = t.live;
   const rows = [
     ["Run", `#${run.id} on ${run.pr}`],
-    ["Running for", h2(Fragment, null, h2(LiveDuration, { since: run.a }), ` (since ${fmt(run.a)})`)],
-    ["Heartbeat", run.hb ? h2(LiveDuration, { since: run.hb, suffix: " ago" }) : "none yet"],
+    ["Running for", h3(Fragment, null, h3(LiveDuration, { since: run.a }), ` (since ${fmt(run.a)})`)],
+    ["Heartbeat", run.hb ? h3(LiveDuration, { since: run.hb, suffix: " ago" }) : "none yet"],
     ["Runtime cap", t.mx ? dur(t.mx) : ""],
     ["First claimed", t.st ? fmt(t.st) : ""]
   ];
@@ -698,18 +814,18 @@ function LiveRun({ t, run, generated }) {
       ["Last activity", L.last ? `${L.desc} (${hm(L.last)})` : ""]
     );
   }
-  return h2(
+  return h3(
     Fragment,
     null,
-    h2("h3", null, `Live run (data ${hm(generated)})`),
-    h2(KV, { rows }),
-    L && L.err ? h2("pre", null, L.err) : null,
-    L && L.say ? h2(Fragment, null, h2("h3", null, "Last worker note"), h2("pre", null, L.say)) : null,
-    L && L.acts && L.acts.length ? h2(
+    h3("h3", null, `Live run (data ${hm(generated)})`),
+    h3(KV, { rows }),
+    L && L.err ? h3("pre", null, L.err) : null,
+    L && L.say ? h3(Fragment, null, h3("h3", null, "Last worker note"), h3("pre", null, L.say)) : null,
+    L && L.acts && L.acts.length ? h3(
       Fragment,
       null,
-      h2("h3", null, `Recent actions (newest first, ${L.acts.length})`),
-      h2("div", { className: "kg-acts" }, ...L.acts.map(([ts, n, a], i) => h2("div", { key: i }, h2("span", null, hm(ts)), h2("b", null, n), h2("span", null, a))))
+      h3("h3", null, `Recent actions (newest first, ${L.acts.length})`),
+      h3("div", { className: "kg-acts" }, ...L.acts.map(([ts, n, a], i) => h3("div", { key: i }, h3("span", null, hm(ts)), h3("b", null, n), h3("span", null, a))))
     ) : null
   );
 }
@@ -717,20 +833,20 @@ function Panel({ t, A, B, byK, hidden, generated, onPick, onClose }) {
   const m = meta(t.s), run = curRun(t);
   const sortK = (s) => [...s].sort((a, b) => (byK.get(a).c || 0) - (byK.get(b).c || 0));
   const cli = `hermes kanban --board ${t.b} show ${t.id}`;
-  return h2(
+  return h3(
     "aside",
     { className: "kg-panel", onClick: (e) => e.stopPropagation(), onPointerDown: (e) => e.stopPropagation() },
-    h2(
+    h3(
       "header",
       null,
-      h2("h2", null, t.t),
-      h2(Tip, { label: "Close (Esc)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: onClose, "aria-label": "Close" }, h2(Codicon, { name: "close" })))
+      h3("h2", null, t.t),
+      h3(Tip2, { label: "Close (Esc)" }, h3(Button2, { size: "icon-xs", variant: "ghost", onClick: onClose, "aria-label": "Close" }, h3(Codicon2, { name: "close" })))
     ),
-    h2(
+    h3(
       "div",
       { className: "kg-pbody" },
-      h2(KV, { rows: [
-        ["Status", h2(Fragment, null, h2("span", { className: "kg-pill", style: { color: m.tone } }, h2(Codicon, { name: m.icon }), t.s), t.bk ? ` (${t.bk})` : "")],
+      h3(KV, { rows: [
+        ["Status", h3(Fragment, null, h3("span", { className: "kg-pill", style: { color: m.tone } }, h3(Codicon2, { name: m.icon }), t.s), t.bk ? ` (${t.bk})` : "")],
         ["Id", t.id],
         ["Board", t.b],
         ["Assignee", t.a],
@@ -741,106 +857,118 @@ function Panel({ t, A, B, byK, hidden, generated, onPick, onClose }) {
         ["Completed", fmt(t.d)],
         ["Failures", t.f || ""]
       ] }),
-      A.size ? h2(Fragment, null, h2("h3", null, `Upstream (${A.size})`), ...sortK(A).map((k) => h2(Row, { key: k, t: byK.get(k), onPick }))) : null,
-      B.size ? h2(Fragment, null, h2("h3", null, `Downstream (${B.size})`), ...sortK(B).map((k) => h2(Row, { key: k, t: byK.get(k), onPick }))) : null,
-      !A.size && !B.size ? h2(Fragment, null, h2("h3", null, "Linked tasks"), h2("div", { style: { color: TONE.muted } }, t.hx ? "None shown." : "None: this task has no parent or child links.")) : null,
-      t.hx ? h2("div", { style: { color: TONE.muted, margin: "4px 0" } }, `${t.hx.p} parent and ${t.hx.c} child links go to tasks outside this view${hidden.length ? ` (hidden: ${hidden.join(", ")})` : ""}.`) : null,
-      run ? h2(LiveRun, { t, run, generated }) : null,
-      t.runs && t.runs.length ? h2(
+      A.size ? h3(Fragment, null, h3("h3", null, `Upstream (${A.size})`), ...sortK(A).map((k) => h3(Row, { key: k, t: byK.get(k), onPick }))) : null,
+      B.size ? h3(Fragment, null, h3("h3", null, `Downstream (${B.size})`), ...sortK(B).map((k) => h3(Row, { key: k, t: byK.get(k), onPick }))) : null,
+      !A.size && !B.size ? h3(Fragment, null, h3("h3", null, "Linked tasks"), h3("div", { style: { color: TONE.muted } }, t.hx ? "None shown." : "None: this task has no parent or child links.")) : null,
+      t.hx ? h3("div", { style: { color: TONE.muted, margin: "4px 0" } }, `${t.hx.p} parent and ${t.hx.c} child links go to tasks outside this view${hidden.length ? ` (hidden: ${hidden.join(", ")})` : ""}.`) : null,
+      run ? h3(LiveRun, { t, run, generated }) : null,
+      t.runs && t.runs.length ? h3(
         Fragment,
         null,
-        h2("h3", null, `Runs (${t.runs.length})`),
-        h2("table", { className: "kg-runs" }, h2("tbody", null, ...t.runs.slice().reverse().map((u) => h2(
+        h3("h3", null, `Runs (${t.runs.length})`),
+        h3("table", { className: "kg-runs" }, h3("tbody", null, ...t.runs.slice().reverse().map((u) => h3(
           "tr",
           { key: u.id },
-          h2("td", null, `#${u.id}`),
-          h2("td", null, u.o || u.s),
-          h2("td", null, fmt(u.a)),
-          h2("td", null, u.z ? dur(u.z - u.a) : h2(LiveDuration, { since: u.a })),
-          h2("td", null, u.e)
+          h3("td", null, `#${u.id}`),
+          h3("td", null, u.o || u.s),
+          h3("td", null, fmt(u.a)),
+          h3("td", null, u.z ? dur(u.z - u.a) : h3(LiveDuration, { since: u.a })),
+          h3("td", null, u.e)
         ))))
       ) : null,
-      t.err ? h2(Fragment, null, h2("h3", null, "Last failure"), h2("pre", null, t.err)) : null,
-      t.res ? h2(Fragment, null, h2("h3", null, "Result"), h2("pre", null, t.res)) : null,
-      t.body ? h2(Fragment, null, h2("h3", null, "Body"), h2("pre", null, t.body)) : null,
-      h2("h3", null, "CLI"),
-      h2(
+      t.err ? h3(Fragment, null, h3("h3", null, "Last failure"), h3("pre", null, t.err)) : null,
+      t.res ? h3(Fragment, null, h3("h3", null, "Result"), h3("pre", null, t.res)) : null,
+      t.body ? h3(Fragment, null, h3("h3", null, "Body"), h3("pre", null, t.body)) : null,
+      h3("h3", null, "CLI"),
+      h3(
         "div",
         { style: { display: "flex", alignItems: "flex-start", gap: 6 } },
-        h2("pre", { style: { flex: 1, margin: 0 } }, cli),
-        h2(CopyButton, { text: cli, label: "Copy command" })
+        h3("pre", { style: { flex: 1, margin: 0 } }, cli),
+        h3(CopyButton, { text: cli, label: "Copy command" })
       )
     )
   );
 }
 function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
-  const mode = useValue2($mode), board = useValue2($board), arrange = useValue2($arrange), sock = useValue2($socket);
+  const mode = useValue3($mode), board = useValue3($board), arrange = useValue3($arrange), sock = useValue3($socket), paused = useValue3($paused);
   const link = failed ? "offline" : sock === "live" ? "live" : "polling";
-  const linkTip = { live: "Live: board events stream in", polling: "Polling every 15 s (event socket unavailable)", offline: `Backend unreachable: ${failed}` }[link];
-  return h2(
+  const frozen = paused && !failed;
+  const linkTip = frozen ? "Paused: the graph keeps what it shows until you resume" : { live: "Live: board events stream in", polling: "Polling every 15 s (event socket unavailable)", offline: `Backend unreachable: ${failed}` }[link];
+  return h3(
     Bar,
     { prefix: "kg" },
-    h2(Codicon, { name: "type-hierarchy", style: { color: TONE.accent } }),
-    h2("strong", { style: { fontSize: 13, marginRight: 4 } }, "Kanban graph"),
-    h2(SegmentedControl, { className: "kg-seg", options: MODES, value: mode, onChange: (id) => {
+    h3(Codicon2, { name: "type-hierarchy", style: { color: TONE.accent } }),
+    h3("strong", { style: { fontSize: 13, marginRight: 4 } }, "Kanban graph"),
+    h3(SegmentedControl2, { className: "kg-seg", options: MODES, value: mode, onChange: (id) => {
       $mode.set(id);
       api?.storage.set("mode", id);
     } }),
-    h2("div", { style: { flex: "1 1 140px", maxWidth: 260 } }, h2(SearchField, { value: search, onChange: setSearch, placeholder: "Search id, title, assignee" })),
-    h2(
+    h3("div", { style: { flex: "1 1 140px", maxWidth: 260 } }, h3(SearchField, { value: search, onChange: setSearch, placeholder: "Search id, title, assignee" })),
+    h3(
       Select,
       { value: board, onValueChange: (v) => {
         $board.set(v);
         api?.storage.set("board", v);
       } },
-      h2(SelectTrigger, { style: { width: 180 }, "aria-label": "Board" }, h2(SelectValue, null)),
-      h2(
+      h3(SelectTrigger, { style: { width: 180 }, "aria-label": "Board" }, h3(SelectValue, null)),
+      h3(
         SelectContent,
         null,
-        h2(SelectItem, { value: ALL }, "All boards"),
-        ...(boards || []).map((b) => h2(SelectItem, { key: b.slug, value: b.slug }, b.name))
+        h3(SelectItem, { value: ALL }, "All boards"),
+        ...(boards || []).map((b) => h3(SelectItem, { key: b.slug, value: b.slug }, b.name))
       )
     ),
-    h2(
+    h3(
       Select,
       { value: arrange, onValueChange: (v) => {
         $arrange.set(v);
         api?.storage.set("arrange", v);
       } },
-      h2(SelectTrigger, { style: { width: 150 }, "aria-label": "Arrange" }, h2(SelectValue, null)),
-      h2(SelectContent, null, ...KG_MODES.map(([id, label]) => h2(SelectItem, { key: id, value: id }, label)))
+      h3(SelectTrigger, { style: { width: 150 }, "aria-label": "Arrange" }, h3(SelectValue, null)),
+      h3(SelectContent, null, ...KG_MODES.map(([id, label]) => h3(SelectItem, { key: id, value: id }, label)))
     ),
-    h2("span", { className: "kg-sp" }),
+    h3("span", { className: "kg-sp" }),
     // Status and zoom wrap as one group, so a narrow window never strands a lone button on row two.
-    h2(
+    h3(
       "span",
       { className: "kg-grp" },
-      h2(
-        Tip,
+      h3(
+        Tip2,
         { label: linkTip },
-        h2(
+        h3(
           "span",
           { style: { fontSize: 11.5, color: TONE.muted, display: "inline-flex", alignItems: "center" } },
-          h2("span", { className: "kg-live-dot", style: { background: link === "live" ? TONE.green : link === "offline" ? TONE.red : TONE.faint } }),
-          link
+          h3("span", { className: "kg-live-dot", style: { background: link === "live" ? TONE.green : link === "offline" ? TONE.red : TONE.faint } }),
+          frozen ? "paused" : link
         )
       ),
-      h2(Tip, { label: "Zoom out (-)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: () => onZoom(0.8), "aria-label": "Zoom out" }, h2(Codicon, { name: "zoom-out" }))),
-      h2(Tip, { label: "Fit (0)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: onFit, "aria-label": "Fit" }, h2(Codicon, { name: "screen-full" }))),
-      h2(Tip, { label: "Zoom in (+)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: () => onZoom(1.25), "aria-label": "Zoom in" }, h2(Codicon, { name: "zoom-in" })))
+      h3(
+        Tip2,
+        { label: paused ? "Resume live updates" : "Pause live updates" },
+        h3(
+          Button2,
+          { size: "icon-xs", variant: paused ? "secondary" : "ghost", onClick: () => setPaused(!paused), "aria-label": "Pause live updates", "aria-pressed": paused },
+          h3(Codicon2, { name: paused ? "debug-start" : "debug-pause" })
+        )
+      ),
+      h3(CardView, null),
+      h3(Tip2, { label: "Zoom out (-)" }, h3(Button2, { size: "icon-xs", variant: "ghost", onClick: () => onZoom(0.8), "aria-label": "Zoom out" }, h3(Codicon2, { name: "zoom-out" }))),
+      h3(Tip2, { label: "Fit (0)" }, h3(Button2, { size: "icon-xs", variant: "ghost", onClick: onFit, "aria-label": "Fit" }, h3(Codicon2, { name: "screen-full" }))),
+      h3(Tip2, { label: "Zoom in (+)" }, h3(Button2, { size: "icon-xs", variant: "ghost", onClick: () => onZoom(1.25), "aria-label": "Zoom in" }, h3(Codicon2, { name: "zoom-in" }))),
+      h3(Tip2, { label: "Reset mode, board and arrange to the defaults" }, h3(Button2, { size: "icon-xs", variant: "ghost", onClick: resetToolbar, "aria-label": "Reset toolbar to defaults" }, h3(Codicon2, { name: "discard" })))
     )
   );
 }
 function Footer({ g, off, toggle, hint, footRef }) {
   const present = g ? g.statuses.filter((s) => g.tasks.some((t) => t.s === s)) : [];
   const counts = (s) => g.tasks.filter((t) => t.s === s).length;
-  return h2(
+  return h3(
     FootBar,
     { prefix: "kg", footRef },
-    ...present.map((s) => h2(
-      Tip,
+    ...present.map((s) => h3(
+      Tip2,
       { key: s, label: `${s} (${counts(s)}). Click: toggle. Shift+click: only ${s}.` },
-      h2("button", {
+      h3("button", {
         type: "button",
         className: `kg-chip${off.has(s) ? " off" : ""}`,
         style: { "--c": meta(s).tone },
@@ -848,14 +976,14 @@ function Footer({ g, off, toggle, hint, footRef }) {
         "aria-pressed": !off.has(s),
         onMouseDown: (e) => e.shiftKey && e.preventDefault(),
         onClick: (e) => toggle(s, e.shiftKey, present)
-      }, h2(Codicon, { name: meta(s).icon }), h2("b", null, counts(s)))
+      }, h3(Codicon2, { name: meta(s).icon }), h3("b", null, counts(s)))
     )),
-    h2("span", { className: "kg-hint", title: "Drag to pan, wheel to zoom, click a task for its lineage, Esc clears." }, hint)
+    h3("span", { className: "kg-hint", title: "Drag to pan, wheel to zoom, click a task for its lineage, Esc clears." }, hint)
   );
 }
 
 // desktop/src/data.js
-import { useQuery as useQuery2, useValue as useValue3 } from "@hermes/plugin-sdk";
+import { useQuery as useQuery2, useValue as useValue4 } from "@hermes/plugin-sdk";
 function graphPath(mode, board) {
   const q = new URLSearchParams(MODE_PARAMS[mode] || {});
   if (board !== ALL) q.set("board", board);
@@ -864,12 +992,13 @@ function graphPath(mode, board) {
 }
 function useGraph(mode, board) {
   const { conn, profile } = useBackend();
-  const live = useValue3($socket) === "live";
+  const live = useValue4($socket) === "live", paused = useValue4($paused);
   return useLiveQuery({
     queryKey: [ID, "graph", conn, profile, mode, board],
     queryFn: () => api ? api.rest(graphPath(mode, board)) : Promise.reject(new Error("kanban-graph not loaded")),
     placeholderData: (prev, prevQuery) => prevQuery && prevQuery.queryKey[2] === conn && prevQuery.queryKey[3] === profile ? prev : void 0,
-    live
+    live,
+    paused
   });
 }
 function useBoards() {
@@ -952,15 +1081,21 @@ function GraphPage() {
     if (r) applyRoute(r);
     return r;
   });
-  const mode = useValue4($mode), board = useValue4($board);
+  const mode = useValue5($mode), board = useValue5($board);
   const { data: g, error, isLoading, isFetching, isPlaceholderData } = useGraph(mode, board);
   const { data: boardList } = useBoards();
   const backend = useBackend();
+  useEffect2(() => () => setPaused(false), []);
   const [sel, setSel] = useState2(() => entry?.task || null);
   const [search, setSearch] = useState2("");
   const [off, setOff] = useState2(() => /* @__PURE__ */ new Set());
   const stageRef = useRef2(null), worldRef = useRef2(null), pageRef = useRef2(null), barRef = useRef2(null), footRef = useRef2(null);
-  const arrange = useValue4($arrange);
+  const arrange = useValue5($arrange);
+  const density = useValue5($density);
+  const fields = useValue5($fields);
+  const color = useValue5($color);
+  const maxP = useMemo(() => Math.max(1, ...g ? g.tasks.map((t2) => t2.p || 0) : []), [g]);
+  const view = useMemo(() => ({ density, fields, color, maxP }), [density, fields, color, maxP]);
   const bandRefs = useRef2([]);
   const deepTask = useRef2(entry?.task || null);
   const onScale = useCallback2((s) => {
@@ -1180,49 +1315,50 @@ function GraphPage() {
   let body;
   if (error && !g) {
     const where = backend.conn ? `backend "${backend.conn}", profile "${backend.profile || "default"}"` : `profile "${backend.profile || "default"}"`;
-    body = h3("div", { style: { paddingTop: 80 } }, h3(ErrorState, { title: "Kanban graph backend unreachable", description: `${error.message || error} (${where}). The Python half answers only on a backend where kanban-graph is installed, in plugins.enabled and restarted since; a remote gateway needs its own install. To see this machine's boards, switch the window to This device.` }));
+    body = h4("div", { style: { paddingTop: 80 } }, h4(ErrorState, { title: "Kanban graph backend unreachable", description: `${error.message || error} (${where}). The Python half answers only on a backend where kanban-graph is installed, in plugins.enabled and restarted since; a remote gateway needs its own install. To see this machine's boards, switch the window to This device.` }));
   } else if (isLoading || !g) {
-    body = h3("div", { style: { paddingTop: 120, display: "grid", placeItems: "center" } }, h3(Loader, null));
+    body = h4("div", { style: { paddingTop: 120, display: "grid", placeItems: "center" } }, h4(Loader, null));
   } else if (!g.tasks.length) {
-    body = h3("div", { style: { paddingTop: 80 } }, h3(EmptyState, { title: mode === "running" ? "Nothing is running" : "No tasks", description: mode === "running" ? "No task is in the running state on these boards. Switch to Open to see queued work." : "These boards have no tasks in this view." }));
+    body = h4("div", { style: { paddingTop: 80 } }, h4(EmptyState, { title: mode === "running" ? "Nothing is running" : "No tasks", description: mode === "running" ? "No task is in the running state on these boards. Switch to Open to see queued work." : "These boards have no tasks in this view." }));
   } else {
     const any = !!lineage;
     const on = (k) => k === sel || rel.has(k);
     bandRefs.current = [];
-    body = h3(
+    body = h4(
       "div",
       { ref: worldRef, className: "kg-world" },
-      ...lay.bands.map((b, i) => h3(
+      ...lay.bands.map((b, i) => h4(
         "div",
         { key: `b-${b.slug}`, className: "kg-band", style: { transform: `translate(${b.x - 24}px,${b.y - 8}px)`, width: b.w + 48, height: b.h + 16 } },
-        h3(
+        h4(
           "div",
           { className: "kg-band-t", ref: (el) => {
             bandRefs.current[i] = el;
           } },
-          h3("span", null, b.name),
-          h3("small", null, [b.slug, b.shown === b.n ? `${b.n} tasks` : `${b.shown}/${b.n} tasks`, ...g.statuses.filter((s) => b.counts[s]).map((s) => `${b.counts[s]} ${s}`)].join(SEP))
+          h4("span", null, b.name),
+          h4("small", null, [b.slug, b.shown === b.n ? `${b.n} tasks` : `${b.shown}/${b.n} tasks`, ...g.statuses.filter((s) => b.counts[s]).map((s) => `${b.counts[s]} ${s}`)].join(SEP))
         )
       )),
-      h3(
+      h4(
         "svg",
         { width: 1, height: 1, key: "edges" },
-        h3("defs", null, h3(
+        h4("defs", null, h4(
           "marker",
           { id: "kg-ah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" },
-          h3("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--ui-text-tertiary)" })
+          h4("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--ui-text-tertiary)" })
         )),
         ...lay.links.map(([p, c]) => {
           const hl = any && on(p) && on(c);
           if (lay.quiet && !hl) return null;
           const path = lay.routes.get(`${p}>${c}`);
-          return h3("path", { key: `${p}>${c}`, className: `kg-edge${hl ? " hl" : ""}${any && !hl ? " kg-dim" : ""}`, d: path, style: { d: `path("${path}")` }, markerEnd: "url(#kg-ah)" });
+          return h4("path", { key: `${p}>${c}`, className: `kg-edge${hl ? " hl" : ""}${any && !hl ? " kg-dim" : ""}`, d: path, style: { d: `path("${path}")` }, markerEnd: "url(#kg-ah)" });
         })
       ),
-      ...g.tasks.filter((t2) => lay.pos.has(t2.k)).map((t2) => h3(Node, {
+      ...g.tasks.filter((t2) => lay.pos.has(t2.k)).map((t2) => h4(Node, {
         key: t2.k,
         t: t2,
         at: lay.pos.get(t2.k),
+        view,
         onPick: pick,
         cls: `${t2.k === sel ? " sel" : ""}${rel.has(t2.k) ? " rel" : ""}${any && !on(t2.k) ? " kg-dim" : ""}`
       }))
@@ -1230,13 +1366,13 @@ function GraphPage() {
   }
   const shown = lay ? lay.pos.size : 0;
   const t = sel && d ? d.byK.get(sel) : null;
-  return h3(
+  return h4(
     Shell,
     { prefix: "kg", pageRef, onKeyDown },
-    h3(Stage, { prefix: "kg", stageRef, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onClickCapture: onStageClick } }, body),
-    h3("div", { ref: barRef }, h3(Toolbar, { boards: boardList?.boards, search, setSearch, onFit: () => fit(true), onZoom: zoomCenter, failed: error ? String(error.message || error) : "" })),
-    g ? h3(Footer, { g, off, toggle, footRef, hint: `${shown}/${g.tasks.length} tasks, ${lay ? lay.links.length : 0}/${g.links.length} links, ${plural(lay ? lay.bands.length : 0, "board")}${lay && lay.implied ? `, ${lay.implied} implied hidden` : ""}${g.hidden.length ? ` (hidden: ${g.hidden.join(", ")})` : ""}${lay && lay.quiet && !sel ? ", arrows on select" : ""}${isFetching ? ", refreshing" : ""}. Data ${hm(g.generated)}` }) : null,
-    t && lineage ? h3(Panel, { t, A: lineage.A, B: lineage.B, byK: d.byK, hidden: g.hidden, generated: g.generated, onPick: pick, onClose: () => setSel(null) }) : null
+    h4(Stage, { prefix: "kg", stageRef, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onClickCapture: onStageClick } }, body),
+    h4("div", { ref: barRef }, h4(Toolbar, { boards: boardList?.boards, search, setSearch, onFit: () => fit(true), onZoom: zoomCenter, failed: error ? String(error.message || error) : "" })),
+    g ? h4(Footer, { g, off, toggle, footRef, hint: `${shown}/${g.tasks.length} tasks, ${lay ? lay.links.length : 0}/${g.links.length} links, ${plural(lay ? lay.bands.length : 0, "board")}${lay && lay.implied ? `, ${lay.implied} implied hidden` : ""}${g.hidden.length ? ` (hidden: ${g.hidden.join(", ")})` : ""}${lay && lay.quiet && !sel ? ", arrows on select" : ""}${isFetching ? ", refreshing" : ""}. Data ${hm(g.generated)}` }) : null,
+    t && lineage ? h4(Panel, { t, A: lineage.A, B: lineage.B, byK: d.byK, hidden: g.hidden, generated: g.generated, onPick: pick, onClose: () => setSel(null) }) : null
   );
 }
 
@@ -1246,15 +1382,24 @@ var index_default = {
   name: "Kanban Graph",
   register(ctx) {
     setApi(ctx);
-    $mode.set(ctx.storage.get("mode", "running"));
-    $board.set(ctx.storage.get("board", ALL));
-    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get("arrange")) ? ctx.storage.get("arrange") : "flow");
+    $mode.set(ctx.storage.get("mode", DEFAULTS.mode));
+    $board.set(ctx.storage.get("board", DEFAULTS.board));
+    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get("arrange")) ? ctx.storage.get("arrange") : DEFAULTS.arrange);
+    $density.set(DENSITIES.some((d) => d.id === ctx.storage.get("density")) ? ctx.storage.get("density") : DEFAULTS.density);
+    $color.set(COLOR_BYS.some((c) => c.id === ctx.storage.get("color")) ? ctx.storage.get("color") : DEFAULTS.color);
+    const fields = ctx.storage.get("fields", null);
+    $fields.set(Array.isArray(fields) ? SUBTITLE_FIELDS.map((f) => f.id).filter((id) => fields.includes(id)) : DEFAULTS.fields);
     const unmountStyle = mountStyle(ID, CSS);
     const stopLive = startLiveChannel(ctx, {
       status: $socket,
       invalidate: [ID, "graph"],
       keepaliveS: KEEPALIVE_S,
-      onTick: (now) => $now.set(now)
+      isPaused: () => $paused.get(),
+      onTick: (now) => {
+        if ($paused.get()) return;
+        $now.set(now);
+        $minute.set(Math.floor(now / 60));
+      }
     });
     ctx.onDispose(() => {
       stopLive();
@@ -1265,7 +1410,7 @@ var index_default = {
       host2.navigate(route.on() ? window.location.hash.replace(/^#/, "") : PATH);
     };
     ctx.registerMany([
-      { id: "page", area: ROUTES_AREA, data: { path: PATH }, render: () => h4(GraphPage) },
+      { id: "page", area: ROUTES_AREA, data: { path: PATH }, render: () => h5(GraphPage) },
       { id: "nav", area: SIDEBAR_NAV_AREA, order: 51, data: { path: PATH, label: "Kanban graph", codicon: "type-hierarchy" } },
       {
         id: "open",

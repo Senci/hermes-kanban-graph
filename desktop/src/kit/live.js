@@ -18,17 +18,19 @@ export function useBackend() {
 
 // useQuery with the polling floor built in. `live` is the socket state of the backend on screen;
 // `pollMs` may widen the floor for a slow upstream (a rate-limited API), never switch it off.
-export function useLiveQuery({ live = false, pollMs = POLL_FLOOR_MS, liveMs = LIVE_SAFETY_MS, ...query }) {
-  return useQuery({ ...query, refetchInterval: live ? liveMs : pollMs })
+// `paused` is the user's own freeze: no polling and no refetch on focus; a changed query key still fetches.
+export function useLiveQuery({ live = false, paused = false, pollMs = POLL_FLOOR_MS, liveMs = LIVE_SAFETY_MS, ...query }) {
+  return useQuery({ ...query, refetchInterval: paused ? false : live ? liveMs : pollMs, ...(paused ? { refetchOnWindowFocus: false, refetchOnReconnect: false } : {}) })
 }
 
 // Open the plugin's event socket and keep `status` ('off' or 'live') honest.
 //   - A frame marks the socket live; silence past twice the backend's ping interval marks it off.
-//   - Event bursts (a dispatcher tick writes several rows) coalesce into one invalidation.
+//   - Event bursts (a dispatcher tick writes several rows) coalesce into one invalidation, skipped
+//     while `isPaused()` is true.
 //   - The SDK resolves a socket's backend once at connect while REST follows the window's current
 //     gateway and profile, so the socket is reopened on every switch.
 // `onTick(now)` runs once a second with epoch seconds, before the liveness check. Returns stop().
-export function startLiveChannel(ctx, { status = atom('off'), path = '/events', invalidate, keepaliveS = 15, burstMs = 400, onTick }) {
+export function startLiveChannel(ctx, { status = atom('off'), path = '/events', invalidate, keepaliveS = 15, burstMs = 400, onTick, isPaused }) {
   let pending = null
   let lastFrame = 0
   let closeSocket = null
@@ -47,6 +49,7 @@ export function startLiveChannel(ctx, { status = atom('off'), path = '/events', 
     if (pending) return
     pending = ctx.setTimeout(() => {
       pending = null
+      if (isPaused?.()) return
       void queryClient.invalidateQueries({ queryKey: invalidate })
     }, burstMs)
   }

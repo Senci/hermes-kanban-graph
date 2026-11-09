@@ -17,11 +17,12 @@ import { createElement as h, Fragment } from 'react'
 import { Bar, FootBar } from './kit/shell.js'
 import { TONE } from './kit/theme.js'
 
-import { curRun, dur, fmt, hm } from './format.js'
+import { curRun, dur, fmt, hm, staleAge } from './format.js'
 import { KG_MODES } from './layout.js'
-import { ALL, meta, MODES } from './model.js'
+import { ALL, meta, MODES, stripeTone } from './model.js'
+import { CardView } from './view.js'
 import { NH, NW } from './sizes.js'
-import { $arrange, $board, $mode, $now, $socket, api } from './state.js'
+import { $arrange, $board, $minute, $mode, $now, $paused, $socket, api, resetToolbar, setPaused } from './state.js'
 
 // Same signal as the app's kanban cards (plugins/kanban/ui.tsx): a heartbeat older than 2 min
 // means the worker may be gone, so the arc slows down and turns amber.
@@ -44,30 +45,36 @@ const onActivate = fn => e => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); fn() }
 }
 
-export const Node = ({ t, at, cls, onPick }) => {
+export const Node = ({ t, at, cls, view, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk
-  const sub = [t.id, t.a, t.m && t.m.replace('claude-', '')].filter(Boolean).join(SEP)
+  const minute = useValue($minute)
+  const silent = run ? Math.floor(staleAge(t, run, minute * 60) / 60) : 0
+  const show = id => view.fields.includes(id)
+  const sub = [show('id') && t.id, show('assignee') && t.a, show('model') && t.m && t.m.replace('claude-', '')].filter(Boolean).join(SEP)
   return h('div', {
     className: `kg-node${run ? ' live' : ''}${cls}`,
     style: { transform: `translate(${at[0]}px,${at[1]}px)`, width: NW, height: NH },
     title: t.t,
     role: 'button',
     tabIndex: 0,
-    'aria-label': `${t.t}, ${t.s}`,
+    'aria-label': `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ''}${view.color === 'assignee' && t.a ? `, ${t.a}` : ''}${silent ? `, no heartbeat for ${silent} min` : ''}`,
     'data-k': t.k,
     'data-id': t.id,
     onClick: e => { e.stopPropagation(); onPick(t.k) },
     onKeyDown: onActivate(() => onPick(t.k))
   },
-    h('div', { className: 'kg-stripe', style: { background: m.tone } }),
+    h('div', { className: 'kg-stripe', style: { background: stripeTone(t, view.color, view.maxP) } }),
     run ? h(Arc, { hb: run.hb || t.hb }) : null,
     h('div', { className: 'kg-t' },
       h(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
-      h('span', null, t.t),
-      warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { marginLeft: 'auto', display: 'inline-flex' } },
-        h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null),
-    h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
-      run ? h(Fragment, null, 'running ', h(LiveDuration, { since: run.a }), t.a ? `${SEP}${t.a}` : '') : sub))
+      h('span', { className: 'kg-tt' }, t.t),
+      t.p > 0 || warn || silent ? h('span', { className: 'kg-flags' },
+        silent ? h('span', { className: 'kg-stale', title: `No heartbeat for ${silent} min` }, h(Codicon, { name: 'watch', style: { color: TONE.yellow } }), `stale ${silent}m`) : null,
+        t.p > 0 ? h('span', { className: 'kg-pri', title: `Priority ${t.p}` }, `P${t.p}`) : null,
+        warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { display: 'inline-flex' } },
+          h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null) : null),
+    view.density === 'compact' || !(run || sub) ? null : h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
+      run ? h(Fragment, null, 'running ', h(LiveDuration, { since: run.a }), t.a && show('assignee') ? `${SEP}${t.a}` : '') : sub))
 }
 
 export function Row({ t, onPick }) {
@@ -149,10 +156,11 @@ export function Panel({ t, A, B, byK, hidden, generated, onPick, onClose }) {
 }
 
 export function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
-  const mode = useValue($mode), board = useValue($board), arrange = useValue($arrange), sock = useValue($socket)
+  const mode = useValue($mode), board = useValue($board), arrange = useValue($arrange), sock = useValue($socket), paused = useValue($paused)
   // A failing graph fetch outranks the socket: the socket can be live on a different backend.
   const link = failed ? 'offline' : sock === 'live' ? 'live' : 'polling'
-  const linkTip = { live: 'Live: board events stream in', polling: 'Polling every 15 s (event socket unavailable)', offline: `Backend unreachable: ${failed}` }[link]
+  const frozen = paused && !failed
+  const linkTip = frozen ? 'Paused: the graph keeps what it shows until you resume' : { live: 'Live: board events stream in', polling: 'Polling every 15 s (event socket unavailable)', offline: `Backend unreachable: ${failed}` }[link]
   return h(Bar, { prefix: 'kg' },
     h(Codicon, { name: 'type-hierarchy', style: { color: TONE.accent } }),
     h('strong', { style: { fontSize: 13, marginRight: 4 } }, 'Kanban graph'),
@@ -172,10 +180,15 @@ export function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
     h(Tip, { label: linkTip },
       h('span', { style: { fontSize: 11.5, color: TONE.muted, display: 'inline-flex', alignItems: 'center' } },
         h('span', { className: 'kg-live-dot', style: { background: link === 'live' ? TONE.green : link === 'offline' ? TONE.red : TONE.faint } }),
-        link)),
+        frozen ? 'paused' : link)),
+    h(Tip, { label: paused ? 'Resume live updates' : 'Pause live updates' },
+      h(Button, { size: 'icon-xs', variant: paused ? 'secondary' : 'ghost', onClick: () => setPaused(!paused), 'aria-label': 'Pause live updates', 'aria-pressed': paused },
+        h(Codicon, { name: paused ? 'debug-start' : 'debug-pause' }))),
+    h(CardView, null),
     h(Tip, { label: 'Zoom out (-)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(0.8), 'aria-label': 'Zoom out' }, h(Codicon, { name: 'zoom-out' }))),
     h(Tip, { label: 'Fit (0)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: onFit, 'aria-label': 'Fit' }, h(Codicon, { name: 'screen-full' }))),
-    h(Tip, { label: 'Zoom in (+)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(1.25), 'aria-label': 'Zoom in' }, h(Codicon, { name: 'zoom-in' })))))
+    h(Tip, { label: 'Zoom in (+)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(1.25), 'aria-label': 'Zoom in' }, h(Codicon, { name: 'zoom-in' }))),
+    h(Tip, { label: 'Reset mode, board and arrange to the defaults' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: resetToolbar, 'aria-label': 'Reset toolbar to defaults' }, h(Codicon, { name: 'discard' })))))
 }
 
 // Status filters (icon and count, the name is in the tooltip) and the status line.

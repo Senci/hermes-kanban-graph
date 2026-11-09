@@ -23,26 +23,36 @@ import { KG_MODES } from './layout.js'
 import './layout-end.js'
 
 import { CSS } from './css.js'
-import { ID, KEEPALIVE_S, PATH, ALL } from './model.js'
+import { COLOR_BYS, DEFAULTS, DENSITIES, ID, KEEPALIVE_S, PATH, SUBTITLE_FIELDS } from './model.js'
 import { GraphPage } from './page.js'
 import { route } from './route.js'
-import { $arrange, $board, $mode, $now, $socket, setApi } from './state.js'
+import { $arrange, $board, $color, $density, $fields, $minute, $mode, $now, $paused, $socket, setApi } from './state.js'
 
 export default {
   id: ID,
   name: 'Kanban Graph',
   register(ctx) {
     setApi(ctx)
-    $mode.set(ctx.storage.get('mode', 'running'))
-    $board.set(ctx.storage.get('board', ALL))
-    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get('arrange')) ? ctx.storage.get('arrange') : 'flow')
+    $mode.set(ctx.storage.get('mode', DEFAULTS.mode))
+    $board.set(ctx.storage.get('board', DEFAULTS.board))
+    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get('arrange')) ? ctx.storage.get('arrange') : DEFAULTS.arrange)
+
+    $density.set(DENSITIES.some(d => d.id === ctx.storage.get('density')) ? ctx.storage.get('density') : DEFAULTS.density)
+    $color.set(COLOR_BYS.some(c => c.id === ctx.storage.get('color')) ? ctx.storage.get('color') : DEFAULTS.color)
+    const fields = ctx.storage.get('fields', null)
+    $fields.set(Array.isArray(fields) ? SUBTITLE_FIELDS.map(f => f.id).filter(id => fields.includes(id)) : DEFAULTS.fields)
 
     const unmountStyle = mountStyle(ID, CSS)
     const stopLive = startLiveChannel(ctx, {
       status: $socket,
       invalidate: [ID, 'graph'],
       keepaliveS: KEEPALIVE_S,
-      onTick: now => $now.set(now)
+      isPaused: () => $paused.get(),
+      onTick: now => {
+        if ($paused.get()) return
+        $now.set(now)
+        $minute.set(Math.floor(now / 60))
+      }
     })
 
     ctx.onDispose(() => {

@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] - 2026-11-09
+
+### Added
+
+- A card shows a small `P<n>` badge when the task's priority is above 0; the card's accessible name includes it.
+- A **Card view** button in the toolbar opens a popover; its **Density** choice shows a card as title only (Compact) or title plus subtitle (Comfortable, the default).
+- The **Card view** popover also lists which of id, assignee and model the subtitle shows (all three by default).
+- The **Card view** popover also sets **Stripe color**: by status (default), by priority (graded against the highest priority in view) or by assignee. With assignee, the card's accessible name carries the assignee.
+- A pause button in the toolbar (`aria-pressed`) stops applying live updates: no polling, no socket refetch, and the clock behind run times and the stale flag stands still. Resuming fetches once. Changing mode or board still loads. The pause is not remembered.
+- A running card whose last heartbeat is more than 5 minutes old (or that never beat, counted from its start) shows a clock icon and `stale <n>m`, and its accessible name says how long it has been silent. The amber arc after 2 minutes is unchanged.
+- A reset control at the end of the toolbar clears the remembered mode, board, arrange and card view choices and returns to the defaults.
+
+### Changed
+
+- A card title wraps to two lines and then ends in an ellipsis; the full title stays in the tooltip and the panel.
+
 ## [0.2.3] - 2026-11-09
 
 ### Changed

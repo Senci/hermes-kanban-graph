@@ -72,6 +72,15 @@ The plugin has no configuration keys. The toolbar controls are remembered on thi
 | Mode | toolbar | **Running + lineage** | Which tasks show: running ones with their lineage, open ones, or all. |
 | Board | toolbar, **Board** | **All boards** | Show one board or all of them. |
 | Arrange | toolbar, **Arrange** | **Flow, left to right** | Layout: flow left to right, flow top down, columns by status, compact grid. |
+| Density | toolbar, **Card view** | **Comfortable** | Comfortable shows the title and a subtitle line. Compact shows the title only. |
+| Subtitle fields | toolbar, **Card view** | **Id, assignee, model** | Which of the three the subtitle line shows. A running card shows its run time and, if on, its assignee. |
+| Stripe color | toolbar, **Card view** | **Status** | What the stripe on the left of a card shows: status, priority (red, amber, blue, graded against the highest priority in view) or assignee (one fixed tone per name). The status icon stays on the card either way. |
+
+A running card also shows **stale 7m** with a clock icon once its worker has sent no heartbeat for more than 5 minutes (workers beat about once a minute; the dispatcher reclaims a run after 15 minutes). The count is in whole minutes. There is no setting for the 5 minutes.
+
+The pause button next to the status text freezes the graph where it is: the poll, the event socket and the run-time clock stop until you press it again, which fetches once. It is not remembered between visits.
+
+The reset button (**Reset toolbar to defaults**) at the right end of the toolbar clears these remembered choices and returns to the defaults above.
 
 ## Troubleshooting
 
