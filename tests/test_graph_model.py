@@ -91,6 +91,15 @@ class GraphModelTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in b["runs"]], [1])
         self.assertIsNone(b["live"])  # no state.db under the temp root
 
+    def test_running_task_and_run_carry_their_heartbeat(self) -> None:
+        con = sqlite3.connect(self.board.db)
+        con.execute("update tasks set last_heartbeat_at = 1700 where id = 'b'")
+        con.execute("update task_runs set last_heartbeat_at = 1710 where id = 1")
+        con.commit()
+        con.close()
+        b = next(t for t in self.build()["tasks"] if t["id"] == "b")
+        self.assertEqual((b["hb"], b["runs"][0]["hb"]), (1700, 1710))
+
     def test_db_opened_read_only(self) -> None:
         con = gm.ro_connect(self.board.db)
         try:

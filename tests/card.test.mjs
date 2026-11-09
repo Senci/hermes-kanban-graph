@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path'
 
 const src = join(dirname(fileURLToPath(import.meta.url)), '..', 'desktop', 'src')
 const { stripeTone, meta } = await import(join(src, 'model.js'))
+const { STALE_RUN_S, staleAge } = await import(join(src, 'format.js'))
 
 const tests = {
   'stripe by status is the status tone': () => {
@@ -27,6 +28,19 @@ const tests = {
     assert.equal(a, stripeTone({ a: 'default' }, 'assignee', 50))
     assert.match(a, /^var\(--ui-[a-z-]+\)$/)
     assert.equal(stripeTone({ a: '' }, 'assignee', 1), 'var(--ui-text-quaternary)')
+  },
+  'a run is stale only after five silent minutes': () => {
+    assert.equal(STALE_RUN_S, 300)
+    const run = { hb: 10_000, a: 9_000 }
+    assert.equal(staleAge({}, run, 10_000 + 300), 0)
+    assert.equal(staleAge({}, run, 10_000 + 301), 301)
+    assert.equal(staleAge({}, run, 10_000 + 60), 0)
+  },
+  'stale age counts from the run heartbeat, then the task heartbeat, then the run start': () => {
+    assert.equal(staleAge({ hb: 9_900 }, { hb: 10_000, a: 1 }, 10_400), 400)
+    assert.equal(staleAge({ hb: 9_900 }, { a: 1 }, 10_400), 500)
+    assert.equal(staleAge({}, { a: 10_000 }, 10_400), 400)
+    assert.equal(staleAge({}, { a: 10_000 }, 10_100), 0)
   }
 }
 

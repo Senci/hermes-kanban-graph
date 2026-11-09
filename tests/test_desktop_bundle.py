@@ -89,13 +89,23 @@ class PauseTest(unittest.TestCase):
     def test_pause_stops_polling_socket_refetch_and_the_clock(self) -> None:
         self.assertTrue(has(r"refetchInterval: paused \? false"))
         self.assertTrue(has(r"if \(isPaused\?\.\(\)\) return"))
-        self.assertTrue(has(r"if \(!\$paused\.get\(\)\) \$now\.set\(now\)"))
+        self.assertTrue(has(r"if \(\$paused\.get\(\)\) return;\n\s+\$now\.set\(now\);\n\s+\$minute\.set\("))
 
     def test_resume_refetches_the_graph_once(self) -> None:
         self.assertTrue(has(r'if \(!on\) void queryClient\d*\.invalidateQueries\(\{ queryKey: \[ID, "graph"\] \}\)'))
 
     def test_pause_is_not_remembered(self) -> None:
         self.assertNotIn("$paused", block(r"var PREFS = \{([^}]*)\}"))
+
+
+class StaleRunTest(unittest.TestCase):
+    def test_flag_is_icon_plus_text_and_in_the_accessible_name(self) -> None:
+        self.assertTrue(has(r"`stale \$\{silent\}m`"))
+        self.assertTrue(has(r'name: "watch"'))
+        self.assertTrue(has(r"no heartbeat for \$\{silent\} min"))
+
+    def test_hook_is_called_unconditionally(self) -> None:
+        self.assertTrue(has(r"const minute = useValue\d*\(\$minute\);\n\s+const silent = run \?"))
 
 
 if __name__ == "__main__":

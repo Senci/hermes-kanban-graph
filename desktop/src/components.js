@@ -17,12 +17,12 @@ import { createElement as h, Fragment } from 'react'
 import { Bar, FootBar } from './kit/shell.js'
 import { TONE } from './kit/theme.js'
 
-import { curRun, dur, fmt, hm } from './format.js'
+import { curRun, dur, fmt, hm, staleAge } from './format.js'
 import { KG_MODES } from './layout.js'
 import { ALL, meta, MODES, stripeTone } from './model.js'
 import { CardView } from './view.js'
 import { NH, NW } from './sizes.js'
-import { $arrange, $board, $mode, $now, $paused, $socket, api, resetToolbar, setPaused } from './state.js'
+import { $arrange, $board, $minute, $mode, $now, $paused, $socket, api, resetToolbar, setPaused } from './state.js'
 
 // Same signal as the app's kanban cards (plugins/kanban/ui.tsx): a heartbeat older than 2 min
 // means the worker may be gone, so the arc slows down and turns amber.
@@ -47,6 +47,8 @@ const onActivate = fn => e => {
 
 export const Node = ({ t, at, cls, view, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk
+  const minute = useValue($minute)
+  const silent = run ? Math.floor(staleAge(t, run, minute * 60) / 60) : 0
   const show = id => view.fields.includes(id)
   const sub = [show('id') && t.id, show('assignee') && t.a, show('model') && t.m && t.m.replace('claude-', '')].filter(Boolean).join(SEP)
   return h('div', {
@@ -55,7 +57,7 @@ export const Node = ({ t, at, cls, view, onPick }) => {
     title: t.t,
     role: 'button',
     tabIndex: 0,
-    'aria-label': `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ''}${view.color === 'assignee' && t.a ? `, ${t.a}` : ''}`,
+    'aria-label': `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ''}${view.color === 'assignee' && t.a ? `, ${t.a}` : ''}${silent ? `, no heartbeat for ${silent} min` : ''}`,
     'data-k': t.k,
     'data-id': t.id,
     onClick: e => { e.stopPropagation(); onPick(t.k) },
@@ -66,7 +68,8 @@ export const Node = ({ t, at, cls, view, onPick }) => {
     h('div', { className: 'kg-t' },
       h(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
       h('span', { className: 'kg-tt' }, t.t),
-      t.p > 0 || warn ? h('span', { className: 'kg-flags' },
+      t.p > 0 || warn || silent ? h('span', { className: 'kg-flags' },
+        silent ? h('span', { className: 'kg-stale', title: `No heartbeat for ${silent} min` }, h(Codicon, { name: 'watch', style: { color: TONE.yellow } }), `stale ${silent}m`) : null,
         t.p > 0 ? h('span', { className: 'kg-pri', title: `Priority ${t.p}` }, `P${t.p}`) : null,
         warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { display: 'inline-flex' } },
           h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null) : null),

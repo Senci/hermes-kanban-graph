@@ -488,6 +488,7 @@ var nodeText = `
 .kg-node .kg-t{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;font-weight:600;line-height:1.3}
 .kg-node .kg-tt{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
 .kg-node .kg-flags{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px}
+.kg-node .kg-stale{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;line-height:1.3;color:var(--ui-text-secondary)}
 .kg-node .kg-pri{padding:0 5px;border:1px solid var(--ui-stroke-primary);border-radius:999px;font-size:10px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;color:var(--ui-text-secondary)}
 .kg-node .kg-s{font-size:11px;line-height:1.3;color:var(--ui-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 `;
@@ -630,6 +631,11 @@ function dur(s) {
   const d = Math.floor(s / 86400), hr = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
   return d ? `${d}d ${hr}h` : hr ? `${hr}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`;
 }
+var STALE_RUN_S = 300;
+var staleAge = (t, run, now) => {
+  const since = run.hb || t.hb || run.a;
+  return since && now - since > STALE_RUN_S ? now - since : 0;
+};
 var curRun = (t) => (t.runs || []).find((u) => u.s === "running");
 
 // desktop/src/view.js
@@ -643,6 +649,7 @@ var setApi = (ctx) => {
   api = ctx;
 };
 var $now = atom2(Math.floor(Date.now() / 1e3));
+var $minute = atom2(Math.floor(Date.now() / 6e4));
 var $mode = atom2(DEFAULTS.mode);
 var $board = atom2(DEFAULTS.board);
 var $arrange = atom2(DEFAULTS.arrange);
@@ -728,6 +735,8 @@ var onActivate = (fn) => (e) => {
 };
 var Node = ({ t, at, cls, view, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk;
+  const minute = useValue3($minute);
+  const silent = run ? Math.floor(staleAge(t, run, minute * 60) / 60) : 0;
   const show = (id) => view.fields.includes(id);
   const sub = [show("id") && t.id, show("assignee") && t.a, show("model") && t.m && t.m.replace("claude-", "")].filter(Boolean).join(SEP);
   return h3(
@@ -738,7 +747,7 @@ var Node = ({ t, at, cls, view, onPick }) => {
       title: t.t,
       role: "button",
       tabIndex: 0,
-      "aria-label": `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ""}${view.color === "assignee" && t.a ? `, ${t.a}` : ""}`,
+      "aria-label": `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ""}${view.color === "assignee" && t.a ? `, ${t.a}` : ""}${silent ? `, no heartbeat for ${silent} min` : ""}`,
       "data-k": t.k,
       "data-id": t.id,
       onClick: (e) => {
@@ -754,9 +763,10 @@ var Node = ({ t, at, cls, view, onPick }) => {
       { className: "kg-t" },
       h3(Codicon2, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
       h3("span", { className: "kg-tt" }, t.t),
-      t.p > 0 || warn ? h3(
+      t.p > 0 || warn || silent ? h3(
         "span",
         { className: "kg-flags" },
+        silent ? h3("span", { className: "kg-stale", title: `No heartbeat for ${silent} min` }, h3(Codicon2, { name: "watch", style: { color: TONE.yellow } }), `stale ${silent}m`) : null,
         t.p > 0 ? h3("span", { className: "kg-pri", title: `Priority ${t.p}` }, `P${t.p}`) : null,
         warn ? h3(
           "span",
@@ -1386,7 +1396,9 @@ var index_default = {
       keepaliveS: KEEPALIVE_S,
       isPaused: () => $paused.get(),
       onTick: (now) => {
-        if (!$paused.get()) $now.set(now);
+        if ($paused.get()) return;
+        $now.set(now);
+        $minute.set(Math.floor(now / 60));
       }
     });
     ctx.onDispose(() => {

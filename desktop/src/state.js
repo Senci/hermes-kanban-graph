@@ -6,6 +6,8 @@ import { DEFAULTS, ID } from './model.js'
 export let api = null
 export const setApi = ctx => { api = ctx }
 export const $now = atom(Math.floor(Date.now() / 1000))
+// Whole minutes since the epoch: a card re-renders once a minute for its stale flag, not every second.
+export const $minute = atom(Math.floor(Date.now() / 60000))
 export const $mode = atom(DEFAULTS.mode)
 export const $board = atom(DEFAULTS.board)
 export const $arrange = atom(DEFAULTS.arrange)
