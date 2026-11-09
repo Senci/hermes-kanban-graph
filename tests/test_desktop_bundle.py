@@ -39,5 +39,16 @@ class PriorityBadgeTest(unittest.TestCase):
         self.assertTrue(has(r"\"aria-label\": `\$\{t\.t\}, \$\{t\.s\}\$\{t\.p > 0 \? `, priority \$\{t\.p\}` : \"\"\}`"))
 
 
+class ResetToolbarTest(unittest.TestCase):
+    def test_reset_forgets_every_remembered_key(self) -> None:
+        remembered = set(re.findall(r"storage\.set\(\"(\w+)\"", BUNDLE))
+        forgotten = set(re.findall(r"storage\.remove\(\"(\w+)\"", BUNDLE))
+        self.assertEqual(remembered, forgotten)
+        self.assertTrue({"mode", "board", "arrange"} <= forgotten)
+
+    def test_reset_control_is_labelled(self) -> None:
+        self.assertTrue(has(r"onClick: resetToolbar, \"aria-label\": \"Reset toolbar to defaults\""))
+
+
 if __name__ == "__main__":
     unittest.main()

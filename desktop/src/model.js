@@ -25,5 +25,7 @@ export const MODES = [
   { id: 'open', label: 'Open' },
   { id: 'all', label: 'All' }
 ]
+// What a fresh install shows, and what the toolbar's reset control restores.
+export const DEFAULTS = { mode: 'running', board: ALL, arrange: 'flow' }
 export const MODE_PARAMS = { running: { focus: 'running' }, open: { hide: 'done' }, all: {} }
 

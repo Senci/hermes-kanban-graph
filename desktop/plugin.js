@@ -447,6 +447,7 @@ var MODES = [
   { id: "open", label: "Open" },
   { id: "all", label: "All" }
 ];
+var DEFAULTS = { mode: "running", board: ALL, arrange: "flow" };
 var MODE_PARAMS = { running: { focus: "running" }, open: { hide: "done" }, all: {} };
 
 // desktop/src/css.js
@@ -604,10 +605,18 @@ var setApi = (ctx) => {
   api = ctx;
 };
 var $now = atom2(Math.floor(Date.now() / 1e3));
-var $mode = atom2("running");
-var $board = atom2(ALL);
-var $arrange = atom2("flow");
+var $mode = atom2(DEFAULTS.mode);
+var $board = atom2(DEFAULTS.board);
+var $arrange = atom2(DEFAULTS.arrange);
 var $socket = atom2("off");
+function resetToolbar() {
+  api?.storage.remove("mode");
+  api?.storage.remove("board");
+  api?.storage.remove("arrange");
+  $mode.set(DEFAULTS.mode);
+  $board.set(DEFAULTS.board);
+  $arrange.set(DEFAULTS.arrange);
+}
 
 // desktop/src/components.js
 var STALE_HEARTBEAT_S = 120;
@@ -834,7 +843,8 @@ function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
       ),
       h2(Tip, { label: "Zoom out (-)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: () => onZoom(0.8), "aria-label": "Zoom out" }, h2(Codicon, { name: "zoom-out" }))),
       h2(Tip, { label: "Fit (0)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: onFit, "aria-label": "Fit" }, h2(Codicon, { name: "screen-full" }))),
-      h2(Tip, { label: "Zoom in (+)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: () => onZoom(1.25), "aria-label": "Zoom in" }, h2(Codicon, { name: "zoom-in" })))
+      h2(Tip, { label: "Zoom in (+)" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: () => onZoom(1.25), "aria-label": "Zoom in" }, h2(Codicon, { name: "zoom-in" }))),
+      h2(Tip, { label: "Reset mode, board and arrange to the defaults" }, h2(Button, { size: "icon-xs", variant: "ghost", onClick: resetToolbar, "aria-label": "Reset toolbar to defaults" }, h2(Codicon, { name: "discard" })))
     )
   );
 }
@@ -1253,9 +1263,9 @@ var index_default = {
   name: "Kanban Graph",
   register(ctx) {
     setApi(ctx);
-    $mode.set(ctx.storage.get("mode", "running"));
-    $board.set(ctx.storage.get("board", ALL));
-    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get("arrange")) ? ctx.storage.get("arrange") : "flow");
+    $mode.set(ctx.storage.get("mode", DEFAULTS.mode));
+    $board.set(ctx.storage.get("board", DEFAULTS.board));
+    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get("arrange")) ? ctx.storage.get("arrange") : DEFAULTS.arrange);
     const unmountStyle = mountStyle(ID, CSS);
     const stopLive = startLiveChannel(ctx, {
       status: $socket,

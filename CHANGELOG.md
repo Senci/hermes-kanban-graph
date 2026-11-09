@@ -9,6 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Added
 
 - A card shows a small `P<n>` badge when the task's priority is above 0; the card's accessible name includes it.
+- A reset control at the end of the toolbar clears the remembered mode, board and arrange choices and returns to the defaults.
 
 ### Changed
 

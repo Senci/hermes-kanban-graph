@@ -23,7 +23,7 @@ import { KG_MODES } from './layout.js'
 import './layout-end.js'
 
 import { CSS } from './css.js'
-import { ID, KEEPALIVE_S, PATH, ALL } from './model.js'
+import { DEFAULTS, ID, KEEPALIVE_S, PATH } from './model.js'
 import { GraphPage } from './page.js'
 import { route } from './route.js'
 import { $arrange, $board, $mode, $now, $socket, setApi } from './state.js'
@@ -33,9 +33,9 @@ export default {
   name: 'Kanban Graph',
   register(ctx) {
     setApi(ctx)
-    $mode.set(ctx.storage.get('mode', 'running'))
-    $board.set(ctx.storage.get('board', ALL))
-    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get('arrange')) ? ctx.storage.get('arrange') : 'flow')
+    $mode.set(ctx.storage.get('mode', DEFAULTS.mode))
+    $board.set(ctx.storage.get('board', DEFAULTS.board))
+    $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get('arrange')) ? ctx.storage.get('arrange') : DEFAULTS.arrange)
 
     const unmountStyle = mountStyle(ID, CSS)
     const stopLive = startLiveChannel(ctx, {

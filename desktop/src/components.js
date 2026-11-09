@@ -21,7 +21,7 @@ import { curRun, dur, fmt, hm } from './format.js'
 import { KG_MODES } from './layout.js'
 import { ALL, meta, MODES } from './model.js'
 import { NH, NW } from './sizes.js'
-import { $arrange, $board, $mode, $now, $socket, api } from './state.js'
+import { $arrange, $board, $mode, $now, $socket, api, resetToolbar } from './state.js'
 
 // Same signal as the app's kanban cards (plugins/kanban/ui.tsx): a heartbeat older than 2 min
 // means the worker may be gone, so the arc slows down and turns amber.
@@ -177,7 +177,8 @@ export function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
         link)),
     h(Tip, { label: 'Zoom out (-)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(0.8), 'aria-label': 'Zoom out' }, h(Codicon, { name: 'zoom-out' }))),
     h(Tip, { label: 'Fit (0)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: onFit, 'aria-label': 'Fit' }, h(Codicon, { name: 'screen-full' }))),
-    h(Tip, { label: 'Zoom in (+)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(1.25), 'aria-label': 'Zoom in' }, h(Codicon, { name: 'zoom-in' })))))
+    h(Tip, { label: 'Zoom in (+)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(1.25), 'aria-label': 'Zoom in' }, h(Codicon, { name: 'zoom-in' }))),
+    h(Tip, { label: 'Reset mode, board and arrange to the defaults' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: resetToolbar, 'aria-label': 'Reset toolbar to defaults' }, h(Codicon, { name: 'discard' })))))
 }
 
 // Status filters (icon and count, the name is in the tooltip) and the status line.
