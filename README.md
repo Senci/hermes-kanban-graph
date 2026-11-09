@@ -59,9 +59,9 @@ The next steps are in the [tutorial](docs/tutorial/getting-started.md). To write
 HTML file for CI (continuous integration) or sharing, see
 [Render a static snapshot](docs/how-to/snapshot.md).
 
-![Two boards in the graph, open work only](docs/assets/overview.png)
+![Two boards in the graph, open work only (mock with demo data)](docs/assets/overview.png)
 
-The image above is a static snapshot render, not the live page.
+The image above is a mock with demo data, not a capture of the live page.
 
 ## Settings
 
