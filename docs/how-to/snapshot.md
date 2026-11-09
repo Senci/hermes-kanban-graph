@@ -18,9 +18,9 @@ The script prints the output path and counts:
 /home/you/.hermes/cache/kanban-graph/website-relaunch.html  boards=1 tasks=6 links=8
 ```
 
-Open the file in any browser. This is what you get:
+Open the file in any browser. A mock of the result, with demo data:
 
-![Two boards in the snapshot, open work only](../assets/overview.png)
+![Two boards, open work only (mock with demo data)](../assets/overview.png)
 
 ## Common variants
 
