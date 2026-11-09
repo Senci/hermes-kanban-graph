@@ -454,9 +454,9 @@ var bar = `
 .kg-bar .kg-seg{grid-auto-columns:auto}
 `;
 var nodeText = `
-.kg-node .kg-t{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;white-space:nowrap}
-.kg-node .kg-t span{overflow:hidden;text-overflow:ellipsis}
-.kg-node .kg-s{font-size:11px;color:var(--ui-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kg-node .kg-t{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;font-weight:600;line-height:1.3}
+.kg-node .kg-tt{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.kg-node .kg-s{font-size:11px;line-height:1.3;color:var(--ui-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 `;
 var panel = `
 .kg-pbody pre{margin:4px 0 10px;padding:8px;white-space:pre-wrap;word-break:break-word;border:1px solid var(--ui-stroke-secondary);border-radius:6px;background:var(--ui-bg-editor);font:11.5px/1.45 var(--font-mono,ui-monospace,monospace)}
@@ -652,7 +652,7 @@ var Node = ({ t, at, cls, onPick }) => {
       "div",
       { className: "kg-t" },
       h2(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
-      h2("span", null, t.t),
+      h2("span", { className: "kg-tt" }, t.t),
       warn ? h2(
         "span",
         { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? "s" : ""}`].filter(Boolean).join(". "), style: { marginLeft: "auto", display: "inline-flex" } },

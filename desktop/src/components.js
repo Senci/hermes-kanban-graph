@@ -63,7 +63,7 @@ export const Node = ({ t, at, cls, onPick }) => {
     run ? h(Arc, { hb: run.hb || t.hb }) : null,
     h('div', { className: 'kg-t' },
       h(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
-      h('span', null, t.t),
+      h('span', { className: 'kg-tt' }, t.t),
       warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { marginLeft: 'auto', display: 'inline-flex' } },
         h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null),
     h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
