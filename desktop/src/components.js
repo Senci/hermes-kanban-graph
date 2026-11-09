@@ -53,7 +53,7 @@ export const Node = ({ t, at, cls, onPick }) => {
     title: t.t,
     role: 'button',
     tabIndex: 0,
-    'aria-label': `${t.t}, ${t.s}`,
+    'aria-label': `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ''}`,
     'data-k': t.k,
     'data-id': t.id,
     onClick: e => { e.stopPropagation(); onPick(t.k) },
@@ -64,8 +64,10 @@ export const Node = ({ t, at, cls, onPick }) => {
     h('div', { className: 'kg-t' },
       h(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
       h('span', { className: 'kg-tt' }, t.t),
-      warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { marginLeft: 'auto', display: 'inline-flex' } },
-        h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null),
+      t.p > 0 || warn ? h('span', { className: 'kg-flags' },
+        t.p > 0 ? h('span', { className: 'kg-pri', title: `Priority ${t.p}` }, `P${t.p}`) : null,
+        warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { display: 'inline-flex' } },
+          h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null) : null),
     h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
       run ? h(Fragment, null, 'running ', h(LiveDuration, { since: run.a }), t.a ? `${SEP}${t.a}` : '') : sub))
 }

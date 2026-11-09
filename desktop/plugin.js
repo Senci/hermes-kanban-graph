@@ -456,6 +456,8 @@ var bar = `
 var nodeText = `
 .kg-node .kg-t{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;font-weight:600;line-height:1.3}
 .kg-node .kg-tt{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.kg-node .kg-flags{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px}
+.kg-node .kg-pri{padding:0 5px;border:1px solid var(--ui-stroke-primary);border-radius:999px;font-size:10px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;color:var(--ui-text-secondary)}
 .kg-node .kg-s{font-size:11px;line-height:1.3;color:var(--ui-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 `;
 var panel = `
@@ -637,7 +639,7 @@ var Node = ({ t, at, cls, onPick }) => {
       title: t.t,
       role: "button",
       tabIndex: 0,
-      "aria-label": `${t.t}, ${t.s}`,
+      "aria-label": `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ""}`,
       "data-k": t.k,
       "data-id": t.id,
       onClick: (e) => {
@@ -653,10 +655,15 @@ var Node = ({ t, at, cls, onPick }) => {
       { className: "kg-t" },
       h2(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
       h2("span", { className: "kg-tt" }, t.t),
-      warn ? h2(
+      t.p > 0 || warn ? h2(
         "span",
-        { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? "s" : ""}`].filter(Boolean).join(". "), style: { marginLeft: "auto", display: "inline-flex" } },
-        h2(Codicon, { name: "warning", style: { color: TONE.red } })
+        { className: "kg-flags" },
+        t.p > 0 ? h2("span", { className: "kg-pri", title: `Priority ${t.p}` }, `P${t.p}`) : null,
+        warn ? h2(
+          "span",
+          { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? "s" : ""}`].filter(Boolean).join(". "), style: { display: "inline-flex" } },
+          h2(Codicon, { name: "warning", style: { color: TONE.red } })
+        ) : null
       ) : null
     ),
     h2(

@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A card shows a small `P<n>` badge when the task's priority is above 0; the card's accessible name includes it.
+
 ### Changed
 
 - A card title wraps to two lines and then ends in an ellipsis; the full title stays in the tooltip and the panel.

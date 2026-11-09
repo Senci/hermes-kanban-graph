@@ -11,8 +11,13 @@ BUNDLE = (Path(__file__).resolve().parent.parent / "desktop" / "plugin.js").read
 
 def rule(selector: str) -> str:
     m = re.search(re.escape(selector) + r"\{([^}]*)\}", BUNDLE)
-    assert m, f"no CSS rule for {selector}"
+    if not m:
+        raise AssertionError(f"no CSS rule for {selector}")
     return m.group(1)
+
+
+def has(pattern: str) -> bool:
+    return re.search(pattern, BUNDLE) is not None
 
 
 class CardTitleTest(unittest.TestCase):
@@ -23,7 +28,15 @@ class CardTitleTest(unittest.TestCase):
         self.assertNotIn("nowrap", rule(".kg-node .kg-t"))
 
     def test_full_title_stays_in_the_tooltip(self) -> None:
-        self.assertRegex(BUNDLE, r"title: t\.t,\n\s+role: \"button\"")
+        self.assertTrue(has(r"title: t\.t,\s+role: \"button\""))
+
+
+class PriorityBadgeTest(unittest.TestCase):
+    def test_badge_shows_only_above_zero_and_names_the_value(self) -> None:
+        self.assertTrue(has(r"t\.p > 0 \? h\d*\(\"span\", \{ className: \"kg-pri\", title: `Priority \$\{t\.p\}` \}, `P\$\{t\.p\}`"))
+
+    def test_card_accessible_name_carries_priority(self) -> None:
+        self.assertTrue(has(r"\"aria-label\": `\$\{t\.t\}, \$\{t\.s\}\$\{t\.p > 0 \? `, priority \$\{t\.p\}` : \"\"\}`"))
 
 
 if __name__ == "__main__":
