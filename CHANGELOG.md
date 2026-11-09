@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows
 
 - A card shows a small `P<n>` badge when the task's priority is above 0; the card's accessible name includes it.
 - A **Card view** button in the toolbar opens a popover; its **Density** choice shows a card as title only (Compact) or title plus subtitle (Comfortable, the default).
+- The **Card view** popover also lists which of id, assignee and model the subtitle shows (all three by default).
 - A reset control at the end of the toolbar clears the remembered mode, board, arrange and card view choices and returns to the defaults.
 
 ### Changed

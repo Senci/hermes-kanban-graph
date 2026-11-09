@@ -10,10 +10,11 @@ export const $mode = atom(DEFAULTS.mode)
 export const $board = atom(DEFAULTS.board)
 export const $arrange = atom(DEFAULTS.arrange)
 export const $density = atom(DEFAULTS.density)
+export const $fields = atom(DEFAULTS.fields)
 export const $socket = atom('off')
 
 // Every remembered choice, by storage key.
-const PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density }
+const PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density, fields: $fields }
 
 export function setPref(key, value) {
   PREFS[key].set(value)

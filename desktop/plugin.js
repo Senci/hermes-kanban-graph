@@ -447,10 +447,15 @@ var MODES = [
   { id: "open", label: "Open" },
   { id: "all", label: "All" }
 ];
-var DEFAULTS = { mode: "running", board: ALL, arrange: "flow", density: "comfortable" };
+var DEFAULTS = { mode: "running", board: ALL, arrange: "flow", density: "comfortable", fields: ["id", "assignee", "model"] };
 var DENSITIES = [
   { id: "comfortable", label: "Comfortable" },
   { id: "compact", label: "Compact" }
+];
+var SUBTITLE_FIELDS = [
+  { id: "id", label: "Id" },
+  { id: "assignee", label: "Assignee" },
+  { id: "model", label: "Model" }
 ];
 var MODE_PARAMS = { running: { focus: "running" }, open: { hide: "done" }, all: {} };
 
@@ -477,7 +482,8 @@ var end = `
 .kg-acts span:last-child{display:-webkit-box;overflow:hidden;word-break:break-word;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .kg-view{display:grid;gap:10px;font-size:12px}
 .kg-view-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.kg-view-row>span:first-child{color:var(--ui-text-secondary)}
+.kg-view-row>span:first-child,.kg-view-sub>span{color:var(--ui-text-secondary)}
+.kg-view-sub{display:grid;gap:6px}
 .kg-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
 `;
 var CSS = graphCss("kg", ANIM_MS, { bar, nodeText, panel, end });
@@ -606,7 +612,7 @@ function dur(s) {
 var curRun = (t) => (t.runs || []).find((u) => u.s === "running");
 
 // desktop/src/view.js
-import { Button, Codicon, Popover, PopoverContent, PopoverTrigger, SegmentedControl, Tip, useValue as useValue2 } from "@hermes/plugin-sdk";
+import { Button, Codicon, Popover, PopoverContent, PopoverTrigger, SegmentedControl, Switch, Tip, useValue as useValue2 } from "@hermes/plugin-sdk";
 import { createElement as h2 } from "react";
 
 // desktop/src/state.js
@@ -620,8 +626,9 @@ var $mode = atom2(DEFAULTS.mode);
 var $board = atom2(DEFAULTS.board);
 var $arrange = atom2(DEFAULTS.arrange);
 var $density = atom2(DEFAULTS.density);
+var $fields = atom2(DEFAULTS.fields);
 var $socket = atom2("off");
-var PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density };
+var PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density, fields: $fields };
 function setPref(key, value) {
   PREFS[key].set(value);
   api?.storage.set(key, value);
@@ -635,7 +642,8 @@ function resetToolbar() {
 
 // desktop/src/view.js
 function CardView() {
-  const density = useValue2($density);
+  const density = useValue2($density), fields = useValue2($fields);
+  const toggleField = (id) => setPref("fields", SUBTITLE_FIELDS.map((f) => f.id).filter((x) => x === id ? !fields.includes(x) : fields.includes(x)));
   return h2(
     Popover,
     null,
@@ -648,6 +656,17 @@ function CardView() {
         { className: "kg-view-row", role: "group", "aria-label": "Density" },
         h2("span", null, "Density"),
         h2(SegmentedControl, { options: DENSITIES, value: density, onChange: (id) => setPref("density", id) })
+      ),
+      h2(
+        "div",
+        { className: "kg-view-sub", role: "group", "aria-label": "Subtitle fields" },
+        h2("span", null, "Subtitle shows"),
+        ...SUBTITLE_FIELDS.map((f) => h2(
+          "label",
+          { key: f.id, className: "kg-view-row" },
+          h2("span", null, f.label),
+          h2(Switch, { size: "xs", checked: fields.includes(f.id), disabled: density === "compact", onCheckedChange: () => toggleField(f.id), "aria-label": `Show ${f.label.toLowerCase()} in the subtitle` })
+        ))
       )
     )
   );
@@ -674,7 +693,8 @@ var onActivate = (fn) => (e) => {
 };
 var Node = ({ t, at, cls, view, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk;
-  const sub = [t.id, t.a, t.m && t.m.replace("claude-", "")].filter(Boolean).join(SEP);
+  const show = (id) => view.fields.includes(id);
+  const sub = [show("id") && t.id, show("assignee") && t.a, show("model") && t.m && t.m.replace("claude-", "")].filter(Boolean).join(SEP);
   return h3(
     "div",
     {
@@ -710,10 +730,10 @@ var Node = ({ t, at, cls, view, onPick }) => {
         ) : null
       ) : null
     ),
-    view.density === "compact" ? null : h3(
+    view.density === "compact" || !(run || sub) ? null : h3(
       "div",
       { className: "kg-s", style: run ? { color: TONE.green } : null },
-      run ? h3(Fragment, null, "running ", h3(LiveDuration, { since: run.a }), t.a ? `${SEP}${t.a}` : "") : sub
+      run ? h3(Fragment, null, "running ", h3(LiveDuration, { since: run.a }), t.a && show("assignee") ? `${SEP}${t.a}` : "") : sub
     )
   );
 };
@@ -1015,7 +1035,8 @@ function GraphPage() {
   const stageRef = useRef2(null), worldRef = useRef2(null), pageRef = useRef2(null), barRef = useRef2(null), footRef = useRef2(null);
   const arrange = useValue5($arrange);
   const density = useValue5($density);
-  const view = useMemo(() => ({ density }), [density]);
+  const fields = useValue5($fields);
+  const view = useMemo(() => ({ density, fields }), [density, fields]);
   const bandRefs = useRef2([]);
   const deepTask = useRef2(entry?.task || null);
   const onScale = useCallback2((s) => {
@@ -1306,6 +1327,8 @@ var index_default = {
     $board.set(ctx.storage.get("board", DEFAULTS.board));
     $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get("arrange")) ? ctx.storage.get("arrange") : DEFAULTS.arrange);
     $density.set(DENSITIES.some((d) => d.id === ctx.storage.get("density")) ? ctx.storage.get("density") : DEFAULTS.density);
+    const fields = ctx.storage.get("fields", null);
+    $fields.set(Array.isArray(fields) ? SUBTITLE_FIELDS.map((f) => f.id).filter((id) => fields.includes(id)) : DEFAULTS.fields);
     const unmountStyle = mountStyle(ID, CSS);
     const stopLive = startLiveChannel(ctx, {
       status: $socket,

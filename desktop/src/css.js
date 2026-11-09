@@ -26,7 +26,8 @@ const end = `
 .kg-acts span:last-child{display:-webkit-box;overflow:hidden;word-break:break-word;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .kg-view{display:grid;gap:10px;font-size:12px}
 .kg-view-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.kg-view-row>span:first-child{color:var(--ui-text-secondary)}
+.kg-view-row>span:first-child,.kg-view-sub>span{color:var(--ui-text-secondary)}
+.kg-view-sub{display:grid;gap:6px}
 .kg-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
 `
 

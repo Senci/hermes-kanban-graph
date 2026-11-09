@@ -47,7 +47,8 @@ const onActivate = fn => e => {
 
 export const Node = ({ t, at, cls, view, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk
-  const sub = [t.id, t.a, t.m && t.m.replace('claude-', '')].filter(Boolean).join(SEP)
+  const show = id => view.fields.includes(id)
+  const sub = [show('id') && t.id, show('assignee') && t.a, show('model') && t.m && t.m.replace('claude-', '')].filter(Boolean).join(SEP)
   return h('div', {
     className: `kg-node${run ? ' live' : ''}${cls}`,
     style: { transform: `translate(${at[0]}px,${at[1]}px)`, width: NW, height: NH },
@@ -69,8 +70,8 @@ export const Node = ({ t, at, cls, view, onPick }) => {
         t.p > 0 ? h('span', { className: 'kg-pri', title: `Priority ${t.p}` }, `P${t.p}`) : null,
         warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { display: 'inline-flex' } },
           h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null) : null),
-    view.density === 'compact' ? null : h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
-      run ? h(Fragment, null, 'running ', h(LiveDuration, { since: run.a }), t.a ? `${SEP}${t.a}` : '') : sub))
+    view.density === 'compact' || !(run || sub) ? null : h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
+      run ? h(Fragment, null, 'running ', h(LiveDuration, { since: run.a }), t.a && show('assignee') ? `${SEP}${t.a}` : '') : sub))
 }
 
 export function Row({ t, onPick }) {

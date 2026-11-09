@@ -26,10 +26,15 @@ export const MODES = [
   { id: 'all', label: 'All' }
 ]
 // What a fresh install shows, and what the toolbar's reset control restores.
-export const DEFAULTS = { mode: 'running', board: ALL, arrange: 'flow', density: 'comfortable' }
+export const DEFAULTS = { mode: 'running', board: ALL, arrange: 'flow', density: 'comfortable', fields: ['id', 'assignee', 'model'] }
 export const DENSITIES = [
   { id: 'comfortable', label: 'Comfortable' },
   { id: 'compact', label: 'Compact' }
+]
+export const SUBTITLE_FIELDS = [
+  { id: 'id', label: 'Id' },
+  { id: 'assignee', label: 'Assignee' },
+  { id: 'model', label: 'Model' }
 ]
 export const MODE_PARAMS = { running: { focus: 'running' }, open: { hide: 'done' }, all: {} }
 

@@ -57,10 +57,20 @@ class ResetToolbarTest(unittest.TestCase):
 
 class CardViewTest(unittest.TestCase):
     def test_compact_density_drops_the_subtitle_only(self) -> None:
-        self.assertTrue(has(r'view\.density === "compact" \? null : h\d*\(\s*"div",\s*\{ className: "kg-s"'))
+        self.assertTrue(has(r'view\.density === "compact" \|\| !\(run \|\| sub\) \? null : h\d*\(\s*"div",\s*\{ className: "kg-s"'))
 
     def test_card_view_trigger_is_labelled(self) -> None:
         self.assertTrue(has(r"\"aria-label\": \"Card view\""))
+
+
+class SubtitleFieldsTest(unittest.TestCase):
+    def test_default_is_the_old_subtitle(self) -> None:
+        self.assertTrue(has(r"fields: \[\"id\", \"assignee\", \"model\"\]"))
+
+    def test_each_field_is_gated_and_each_switch_is_labelled(self) -> None:
+        for field in ("id", "assignee", "model"):
+            self.assertTrue(has(r"show\(\"%s\"\)" % field), field)
+        self.assertTrue(has(r"\"aria-label\": `Show \$\{f\.label\.toLowerCase\(\)\} in the subtitle`"))
 
 
 if __name__ == "__main__":

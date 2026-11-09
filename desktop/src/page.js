@@ -13,7 +13,7 @@ import { KG_MODES, kgHeadFont, kgLayout } from './layout.js'
 import { ALL, ANIM_MS, SEARCH_DEBOUNCE_MS } from './model.js'
 import { applyRoute, payloadIsFor, route } from './route.js'
 import { NH, NW } from './sizes.js'
-import { $arrange, $board, $density, $mode, api } from './state.js'
+import { $arrange, $board, $density, $fields, $mode, api } from './state.js'
 
 export function GraphPage() {
   // The deep link is authoritative on entry, so the first query already asks for the linked board
@@ -34,7 +34,8 @@ export function GraphPage() {
   const stageRef = useRef(null), worldRef = useRef(null), pageRef = useRef(null), barRef = useRef(null), footRef = useRef(null)
   const arrange = useValue($arrange)
   const density = useValue($density)
-  const view = useMemo(() => ({ density }), [density])
+  const fields = useValue($fields)
+  const view = useMemo(() => ({ density, fields }), [density, fields])
   const bandRefs = useRef([])
   // A selection that arrived from outside the page. The camera centres on it once the layout knows
   // where it is; see the pending-selection effects below.
