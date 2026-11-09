@@ -13,7 +13,7 @@ import { KG_MODES, kgHeadFont, kgLayout } from './layout.js'
 import { ALL, ANIM_MS, SEARCH_DEBOUNCE_MS } from './model.js'
 import { applyRoute, payloadIsFor, route } from './route.js'
 import { NH, NW } from './sizes.js'
-import { $arrange, $board, $mode, api } from './state.js'
+import { $arrange, $board, $density, $mode, api } from './state.js'
 
 export function GraphPage() {
   // The deep link is authoritative on entry, so the first query already asks for the linked board
@@ -33,6 +33,8 @@ export function GraphPage() {
   const [off, setOff] = useState(() => new Set())
   const stageRef = useRef(null), worldRef = useRef(null), pageRef = useRef(null), barRef = useRef(null), footRef = useRef(null)
   const arrange = useValue($arrange)
+  const density = useValue($density)
+  const view = useMemo(() => ({ density }), [density])
   const bandRefs = useRef([])
   // A selection that arrived from outside the page. The camera centres on it once the layout knows
   // where it is; see the pending-selection effects below.
@@ -299,7 +301,7 @@ export function GraphPage() {
           return h('path', { key: `${p}>${c}`, className: `kg-edge${hl ? ' hl' : ''}${any && !hl ? ' kg-dim' : ''}`, d: path, style: { d: `path("${path}")` }, markerEnd: 'url(#kg-ah)' })
         })),
       ...g.tasks.filter(t => lay.pos.has(t.k)).map(t => h(Node, {
-        key: t.k, t, at: lay.pos.get(t.k), onPick: pick,
+        key: t.k, t, at: lay.pos.get(t.k), view, onPick: pick,
         cls: `${t.k === sel ? ' sel' : ''}${rel.has(t.k) ? ' rel' : ''}${any && !on(t.k) ? ' kg-dim' : ''}`
       })))
   }

@@ -9,14 +9,21 @@ export const $now = atom(Math.floor(Date.now() / 1000))
 export const $mode = atom(DEFAULTS.mode)
 export const $board = atom(DEFAULTS.board)
 export const $arrange = atom(DEFAULTS.arrange)
+export const $density = atom(DEFAULTS.density)
 export const $socket = atom('off')
 
-// Forget every remembered toolbar choice and show the defaults again.
+// Every remembered choice, by storage key.
+const PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density }
+
+export function setPref(key, value) {
+  PREFS[key].set(value)
+  api?.storage.set(key, value)
+}
+
+// Forget every remembered choice and show the defaults again.
 export function resetToolbar() {
-  api?.storage.remove('mode')
-  api?.storage.remove('board')
-  api?.storage.remove('arrange')
-  $mode.set(DEFAULTS.mode)
-  $board.set(DEFAULTS.board)
-  $arrange.set(DEFAULTS.arrange)
+  for (const [key, a] of Object.entries(PREFS)) {
+    api?.storage.remove(key)
+    a.set(DEFAULTS[key])
+  }
 }

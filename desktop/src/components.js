@@ -20,6 +20,7 @@ import { TONE } from './kit/theme.js'
 import { curRun, dur, fmt, hm } from './format.js'
 import { KG_MODES } from './layout.js'
 import { ALL, meta, MODES } from './model.js'
+import { CardView } from './view.js'
 import { NH, NW } from './sizes.js'
 import { $arrange, $board, $mode, $now, $socket, api, resetToolbar } from './state.js'
 
@@ -44,7 +45,7 @@ const onActivate = fn => e => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); fn() }
 }
 
-export const Node = ({ t, at, cls, onPick }) => {
+export const Node = ({ t, at, cls, view, onPick }) => {
   const m = meta(t.s), run = curRun(t), warn = t.f > 0 || t.bk
   const sub = [t.id, t.a, t.m && t.m.replace('claude-', '')].filter(Boolean).join(SEP)
   return h('div', {
@@ -68,7 +69,7 @@ export const Node = ({ t, at, cls, onPick }) => {
         t.p > 0 ? h('span', { className: 'kg-pri', title: `Priority ${t.p}` }, `P${t.p}`) : null,
         warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { display: 'inline-flex' } },
           h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null) : null),
-    h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
+    view.density === 'compact' ? null : h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
       run ? h(Fragment, null, 'running ', h(LiveDuration, { since: run.a }), t.a ? `${SEP}${t.a}` : '') : sub))
 }
 
@@ -175,6 +176,7 @@ export function Toolbar({ boards, search, setSearch, onFit, onZoom, failed }) {
       h('span', { style: { fontSize: 11.5, color: TONE.muted, display: 'inline-flex', alignItems: 'center' } },
         h('span', { className: 'kg-live-dot', style: { background: link === 'live' ? TONE.green : link === 'offline' ? TONE.red : TONE.faint } }),
         link)),
+    h(CardView, null),
     h(Tip, { label: 'Zoom out (-)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(0.8), 'aria-label': 'Zoom out' }, h(Codicon, { name: 'zoom-out' }))),
     h(Tip, { label: 'Fit (0)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: onFit, 'aria-label': 'Fit' }, h(Codicon, { name: 'screen-full' }))),
     h(Tip, { label: 'Zoom in (+)' }, h(Button, { size: 'icon-xs', variant: 'ghost', onClick: () => onZoom(1.25), 'aria-label': 'Zoom in' }, h(Codicon, { name: 'zoom-in' }))),

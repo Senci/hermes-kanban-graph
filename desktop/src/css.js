@@ -24,6 +24,9 @@ const end = `
 .kg-acts>div{display:grid;grid-template-columns:44px 96px 1fr;gap:6px;padding:2px 0;border-top:1px solid var(--ui-stroke-secondary)}
 .kg-acts b{font-weight:600;color:var(--ui-green)}
 .kg-acts span:last-child{display:-webkit-box;overflow:hidden;word-break:break-word;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.kg-view{display:grid;gap:10px;font-size:12px}
+.kg-view-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.kg-view-row>span:first-child{color:var(--ui-text-secondary)}
 .kg-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
 `
 

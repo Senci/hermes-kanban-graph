@@ -40,14 +40,27 @@ class PriorityBadgeTest(unittest.TestCase):
 
 
 class ResetToolbarTest(unittest.TestCase):
-    def test_reset_forgets_every_remembered_key(self) -> None:
-        remembered = set(re.findall(r"storage\.set\(\"(\w+)\"", BUNDLE))
-        forgotten = set(re.findall(r"storage\.remove\(\"(\w+)\"", BUNDLE))
-        self.assertEqual(remembered, forgotten)
-        self.assertTrue({"mode", "board", "arrange"} <= forgotten)
+    def test_reset_covers_every_remembered_key(self) -> None:
+        prefs = re.search(r"var PREFS = \{([^}]*)\}", BUNDLE)
+        self.assertIsNotNone(prefs)
+        keys = set(re.findall(r"(\w+): \$\w+", prefs.group(1)))
+        defaults = re.search(r"var DEFAULTS = \{([^}]*)\}", BUNDLE)
+        self.assertIsNotNone(defaults)
+        self.assertEqual(keys, set(re.findall(r"(\w+):", defaults.group(1))))
+        written = set(re.findall(r"storage\.set\(\"(\w+)\"", BUNDLE)) | set(re.findall(r"setPref\(\"(\w+)\"", BUNDLE))
+        self.assertTrue(written <= keys, written - keys)
+        self.assertTrue({"mode", "board", "arrange", "density"} <= keys)
 
     def test_reset_control_is_labelled(self) -> None:
         self.assertTrue(has(r"onClick: resetToolbar, \"aria-label\": \"Reset toolbar to defaults\""))
+
+
+class CardViewTest(unittest.TestCase):
+    def test_compact_density_drops_the_subtitle_only(self) -> None:
+        self.assertTrue(has(r'view\.density === "compact" \? null : h\d*\(\s*"div",\s*\{ className: "kg-s"'))
+
+    def test_card_view_trigger_is_labelled(self) -> None:
+        self.assertTrue(has(r"\"aria-label\": \"Card view\""))
 
 
 if __name__ == "__main__":

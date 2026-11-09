@@ -72,6 +72,7 @@ The plugin has no configuration keys. The toolbar controls are remembered on thi
 | Mode | toolbar | **Running + lineage** | Which tasks show: running ones with their lineage, open ones, or all. |
 | Board | toolbar, **Board** | **All boards** | Show one board or all of them. |
 | Arrange | toolbar, **Arrange** | **Flow, left to right** | Layout: flow left to right, flow top down, columns by status, compact grid. |
+| Density | toolbar, **Card view** | **Comfortable** | Comfortable shows the title and a subtitle line. Compact shows the title only. |
 
 The reset button (**Reset toolbar to defaults**) at the right end of the toolbar clears these remembered choices and returns to the defaults above.
 
