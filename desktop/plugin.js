@@ -447,11 +447,31 @@ var MODES = [
   { id: "open", label: "Open" },
   { id: "all", label: "All" }
 ];
-var DEFAULTS = { mode: "running", board: ALL, arrange: "flow", density: "comfortable", fields: ["id", "assignee", "model"] };
+var DEFAULTS = { mode: "running", board: ALL, arrange: "flow", density: "comfortable", color: "status", fields: ["id", "assignee", "model"] };
 var DENSITIES = [
   { id: "comfortable", label: "Comfortable" },
   { id: "compact", label: "Compact" }
 ];
+var COLOR_BYS = [
+  { id: "status", label: "Status" },
+  { id: "priority", label: "Priority" },
+  { id: "assignee", label: "Assignee" }
+];
+var PEOPLE = [ui("blue"), ui("purple"), ui("green"), ui("yellow"), ui("red")];
+function stripeTone(t, color, maxP) {
+  if (color === "priority") {
+    if (!(t.p > 0)) return ui("text-quaternary");
+    const r = t.p / maxP;
+    return r >= 0.75 ? ui("red") : r >= 0.4 ? ui("yellow") : ui("blue");
+  }
+  if (color === "assignee") {
+    if (!t.a) return ui("text-quaternary");
+    let n = 0;
+    for (const ch of t.a) n = n * 31 + ch.charCodeAt(0) >>> 0;
+    return PEOPLE[n % PEOPLE.length];
+  }
+  return meta(t.s).tone;
+}
 var SUBTITLE_FIELDS = [
   { id: "id", label: "Id" },
   { id: "assignee", label: "Assignee" },
@@ -481,7 +501,7 @@ var end = `
 .kg-acts b{font-weight:600;color:var(--ui-green)}
 .kg-acts span:last-child{display:-webkit-box;overflow:hidden;word-break:break-word;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .kg-view{display:grid;gap:10px;font-size:12px}
-.kg-view-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.kg-view-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .kg-view-row>span:first-child,.kg-view-sub>span{color:var(--ui-text-secondary)}
 .kg-view-sub{display:grid;gap:6px}
 .kg-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
@@ -627,8 +647,9 @@ var $board = atom2(DEFAULTS.board);
 var $arrange = atom2(DEFAULTS.arrange);
 var $density = atom2(DEFAULTS.density);
 var $fields = atom2(DEFAULTS.fields);
+var $color = atom2(DEFAULTS.color);
 var $socket = atom2("off");
-var PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density, fields: $fields };
+var PREFS = { mode: $mode, board: $board, arrange: $arrange, density: $density, fields: $fields, color: $color };
 function setPref(key, value) {
   PREFS[key].set(value);
   api?.storage.set(key, value);
@@ -642,7 +663,7 @@ function resetToolbar() {
 
 // desktop/src/view.js
 function CardView() {
-  const density = useValue2($density), fields = useValue2($fields);
+  const density = useValue2($density), fields = useValue2($fields), color = useValue2($color);
   const toggleField = (id) => setPref("fields", SUBTITLE_FIELDS.map((f) => f.id).filter((x) => x === id ? !fields.includes(x) : fields.includes(x)));
   return h2(
     Popover,
@@ -656,6 +677,12 @@ function CardView() {
         { className: "kg-view-row", role: "group", "aria-label": "Density" },
         h2("span", null, "Density"),
         h2(SegmentedControl, { options: DENSITIES, value: density, onChange: (id) => setPref("density", id) })
+      ),
+      h2(
+        "div",
+        { className: "kg-view-row", role: "group", "aria-label": "Stripe color" },
+        h2("span", null, "Stripe color"),
+        h2(SegmentedControl, { options: COLOR_BYS, value: color, onChange: (id) => setPref("color", id) })
       ),
       h2(
         "div",
@@ -703,7 +730,7 @@ var Node = ({ t, at, cls, view, onPick }) => {
       title: t.t,
       role: "button",
       tabIndex: 0,
-      "aria-label": `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ""}`,
+      "aria-label": `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ""}${view.color === "assignee" && t.a ? `, ${t.a}` : ""}`,
       "data-k": t.k,
       "data-id": t.id,
       onClick: (e) => {
@@ -712,7 +739,7 @@ var Node = ({ t, at, cls, view, onPick }) => {
       },
       onKeyDown: onActivate(() => onPick(t.k))
     },
-    h3("div", { className: "kg-stripe", style: { background: m.tone } }),
+    h3("div", { className: "kg-stripe", style: { background: stripeTone(t, view.color, view.maxP) } }),
     run ? h3(Arc, { hb: run.hb || t.hb }) : null,
     h3(
       "div",
@@ -1036,7 +1063,9 @@ function GraphPage() {
   const arrange = useValue5($arrange);
   const density = useValue5($density);
   const fields = useValue5($fields);
-  const view = useMemo(() => ({ density, fields }), [density, fields]);
+  const color = useValue5($color);
+  const maxP = useMemo(() => Math.max(1, ...g ? g.tasks.map((t2) => t2.p || 0) : []), [g]);
+  const view = useMemo(() => ({ density, fields, color, maxP }), [density, fields, color, maxP]);
   const bandRefs = useRef2([]);
   const deepTask = useRef2(entry?.task || null);
   const onScale = useCallback2((s) => {
@@ -1327,6 +1356,7 @@ var index_default = {
     $board.set(ctx.storage.get("board", DEFAULTS.board));
     $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get("arrange")) ? ctx.storage.get("arrange") : DEFAULTS.arrange);
     $density.set(DENSITIES.some((d) => d.id === ctx.storage.get("density")) ? ctx.storage.get("density") : DEFAULTS.density);
+    $color.set(COLOR_BYS.some((c) => c.id === ctx.storage.get("color")) ? ctx.storage.get("color") : DEFAULTS.color);
     const fields = ctx.storage.get("fields", null);
     $fields.set(Array.isArray(fields) ? SUBTITLE_FIELDS.map((f) => f.id).filter((id) => fields.includes(id)) : DEFAULTS.fields);
     const unmountStyle = mountStyle(ID, CSS);

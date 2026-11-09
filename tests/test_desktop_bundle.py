@@ -16,6 +16,13 @@ def rule(selector: str) -> str:
     return m.group(1)
 
 
+def block(pattern: str) -> str:
+    m = re.search(pattern, BUNDLE, re.S)
+    if not m:
+        raise AssertionError(f"no match for {pattern}")
+    return m.group(1)
+
+
 def has(pattern: str) -> bool:
     return re.search(pattern, BUNDLE) is not None
 
@@ -36,17 +43,13 @@ class PriorityBadgeTest(unittest.TestCase):
         self.assertTrue(has(r"t\.p > 0 \? h\d*\(\"span\", \{ className: \"kg-pri\", title: `Priority \$\{t\.p\}` \}, `P\$\{t\.p\}`"))
 
     def test_card_accessible_name_carries_priority(self) -> None:
-        self.assertTrue(has(r"\"aria-label\": `\$\{t\.t\}, \$\{t\.s\}\$\{t\.p > 0 \? `, priority \$\{t\.p\}` : \"\"\}`"))
+        self.assertTrue(has(r'"aria-label": `\$\{t\.t\}, \$\{t\.s\}\$\{t\.p > 0 \? `, priority \$\{t\.p\}` : ""\}'))
 
 
 class ResetToolbarTest(unittest.TestCase):
     def test_reset_covers_every_remembered_key(self) -> None:
-        prefs = re.search(r"var PREFS = \{([^}]*)\}", BUNDLE)
-        self.assertIsNotNone(prefs)
-        keys = set(re.findall(r"(\w+): \$\w+", prefs.group(1)))
-        defaults = re.search(r"var DEFAULTS = \{([^}]*)\}", BUNDLE)
-        self.assertIsNotNone(defaults)
-        self.assertEqual(keys, set(re.findall(r"(\w+):", defaults.group(1))))
+        keys = set(re.findall(r"(\w+): \$\w+", block(r"var PREFS = \{([^}]*)\}")))
+        self.assertEqual(keys, set(re.findall(r"(\w+):", block(r"var DEFAULTS = \{([^}]*)\}"))))
         written = set(re.findall(r"storage\.set\(\"(\w+)\"", BUNDLE)) | set(re.findall(r"setPref\(\"(\w+)\"", BUNDLE))
         self.assertTrue(written <= keys, written - keys)
         self.assertTrue({"mode", "board", "arrange", "density"} <= keys)
@@ -71,6 +74,12 @@ class SubtitleFieldsTest(unittest.TestCase):
         for field in ("id", "assignee", "model"):
             self.assertTrue(has(r"show\(\"%s\"\)" % field), field)
         self.assertTrue(has(r"\"aria-label\": `Show \$\{f\.label\.toLowerCase\(\)\} in the subtitle`"))
+
+
+class StripeColorTest(unittest.TestCase):
+    def test_stripe_follows_the_color_choice_and_defaults_to_status(self) -> None:
+        self.assertTrue(has(r"color: \"status\""))
+        self.assertTrue(has(r"background: stripeTone\(t, view\.color, view\.maxP\)"))
 
 
 if __name__ == "__main__":

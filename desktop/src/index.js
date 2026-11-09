@@ -23,10 +23,10 @@ import { KG_MODES } from './layout.js'
 import './layout-end.js'
 
 import { CSS } from './css.js'
-import { DEFAULTS, DENSITIES, ID, KEEPALIVE_S, PATH, SUBTITLE_FIELDS } from './model.js'
+import { COLOR_BYS, DEFAULTS, DENSITIES, ID, KEEPALIVE_S, PATH, SUBTITLE_FIELDS } from './model.js'
 import { GraphPage } from './page.js'
 import { route } from './route.js'
-import { $arrange, $board, $density, $fields, $mode, $now, $socket, setApi } from './state.js'
+import { $arrange, $board, $color, $density, $fields, $mode, $now, $socket, setApi } from './state.js'
 
 export default {
   id: ID,
@@ -38,6 +38,7 @@ export default {
     $arrange.set(KG_MODES.some(([m]) => m === ctx.storage.get('arrange')) ? ctx.storage.get('arrange') : DEFAULTS.arrange)
 
     $density.set(DENSITIES.some(d => d.id === ctx.storage.get('density')) ? ctx.storage.get('density') : DEFAULTS.density)
+    $color.set(COLOR_BYS.some(c => c.id === ctx.storage.get('color')) ? ctx.storage.get('color') : DEFAULTS.color)
     const fields = ctx.storage.get('fields', null)
     $fields.set(Array.isArray(fields) ? SUBTITLE_FIELDS.map(f => f.id).filter(id => fields.includes(id)) : DEFAULTS.fields)
 

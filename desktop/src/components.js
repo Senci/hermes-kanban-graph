@@ -19,7 +19,7 @@ import { TONE } from './kit/theme.js'
 
 import { curRun, dur, fmt, hm } from './format.js'
 import { KG_MODES } from './layout.js'
-import { ALL, meta, MODES } from './model.js'
+import { ALL, meta, MODES, stripeTone } from './model.js'
 import { CardView } from './view.js'
 import { NH, NW } from './sizes.js'
 import { $arrange, $board, $mode, $now, $socket, api, resetToolbar } from './state.js'
@@ -55,13 +55,13 @@ export const Node = ({ t, at, cls, view, onPick }) => {
     title: t.t,
     role: 'button',
     tabIndex: 0,
-    'aria-label': `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ''}`,
+    'aria-label': `${t.t}, ${t.s}${t.p > 0 ? `, priority ${t.p}` : ''}${view.color === 'assignee' && t.a ? `, ${t.a}` : ''}`,
     'data-k': t.k,
     'data-id': t.id,
     onClick: e => { e.stopPropagation(); onPick(t.k) },
     onKeyDown: onActivate(() => onPick(t.k))
   },
-    h('div', { className: 'kg-stripe', style: { background: m.tone } }),
+    h('div', { className: 'kg-stripe', style: { background: stripeTone(t, view.color, view.maxP) } }),
     run ? h(Arc, { hb: run.hb || t.hb }) : null,
     h('div', { className: 'kg-t' },
       h(Codicon, { name: m.icon, style: { color: m.tone }, spinning: !!run }),
