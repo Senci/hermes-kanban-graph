@@ -59,9 +59,9 @@ The next steps are in the [tutorial](docs/tutorial/getting-started.md). To write
 HTML file for CI (continuous integration) or sharing, see
 [Render a static snapshot](docs/how-to/snapshot.md).
 
-![Two boards in the graph, open work only (mock with demo data)](docs/assets/overview.png)
+![The graph page with demo data, open work only (rendered from the plugin's desktop code; host styling approximated)](docs/assets/overview.png)
 
-The image above is a mock with demo data, not a capture of the live page.
+The image above is rendered from the plugin's desktop code with demo data. The host's own styling differs, so the live page in Hermes Desktop will look somewhat different.
 
 ## Settings
 

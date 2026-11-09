@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.5] - 2026-11-09
+
+### Changed
+
+- The priority badge uses the host's arrow icon with the number, in the same yellow as the stale marker, instead of a `P<n>` pill.
+- The README and snapshot docs show renders of the current page with demo data.
+
 ## [0.2.4] - 2026-11-09
 
 ### Added

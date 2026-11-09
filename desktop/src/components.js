@@ -70,7 +70,7 @@ export const Node = ({ t, at, cls, view, onPick }) => {
       h('span', { className: 'kg-tt' }, t.t),
       t.p > 0 || warn || silent ? h('span', { className: 'kg-flags' },
         silent ? h('span', { className: 'kg-stale', title: `No heartbeat for ${silent} min` }, h(Codicon, { name: 'watch', style: { color: TONE.yellow } }), `stale ${silent}m`) : null,
-        t.p > 0 ? h('span', { className: 'kg-pri', title: `Priority ${t.p}` }, `P${t.p}`) : null,
+        t.p > 0 ? h('span', { className: 'kg-pri', title: `Priority ${t.p}`, style: { color: TONE.yellow } }, h(Codicon, { name: 'arrow-up' }), t.p) : null,
         warn ? h('span', { title: [t.bk && `Blocked: ${t.bk}`, t.f > 0 && `${t.f} failed run${t.f > 1 ? 's' : ''}`].filter(Boolean).join('. '), style: { display: 'inline-flex' } },
           h(Codicon, { name: 'warning', style: { color: TONE.red } })) : null) : null),
     view.density === 'compact' || !(run || sub) ? null : h('div', { className: 'kg-s', style: run ? { color: TONE.green } : null },
